@@ -4,6 +4,7 @@
     "": {
       "name": "curgit",
       "dependencies": {
+        "@databuddy/sdk": "^2.0.0",
         "@radix-ui/react-slot": "^1.2.3",
         "@radix-ui/react-toast": "^1.2.15",
         "@supabase/supabase-js": "^2.56.0",
@@ -49,6 +50,8 @@
     "@csstools/css-parser-algorithms": ["@csstools/css-parser-algorithms@3.0.5", "", { "peerDependencies": { "@csstools/css-tokenizer": "^3.0.4" } }, "sha512-DaDeUkXZKjdGhgYaHNJTV9pV7Y9B3b644jCLs9Upc3VeNGg6LWARAT6O+Q+/COo+2gg/bM5rhpMAtf70WqfBdQ=="],
 
     "@csstools/css-tokenizer": ["@csstools/css-tokenizer@3.0.4", "", {}, "sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw=="],
+
+    "@databuddy/sdk": ["@databuddy/sdk@2.0.0", "", { "peerDependencies": { "react": ">=18", "vue": ">=3" }, "optionalPeers": ["react", "vue"] }, "sha512-jwNeLwg03jN3380W2eyhegjO/eqqVcVXekO01n/d9dzalnaCm6DCEG3lGd8PMBf8ztu/dv1QTivkd4W6rO+tNQ=="],
 
     "@emnapi/core": ["@emnapi/core@1.4.5", "", { "dependencies": { "@emnapi/wasi-threads": "1.0.4", "tslib": "^2.4.0" } }, "sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q=="],
 

@@ -9,6 +9,7 @@
 		"lint": "eslint"
 	},
 	"dependencies": {
+		"@databuddy/sdk": "^2.0.0",
 		"@radix-ui/react-slot": "^1.2.3",
 		"@radix-ui/react-toast": "^1.2.15",
 		"@supabase/supabase-js": "^2.56.0",
