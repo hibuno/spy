@@ -109,7 +109,6 @@ export async function GET() {
 			return NextResponse.json({
 				success: true,
 				message: 'No repositories found with null images',
-				processed: 0
 			});
 		}
 
@@ -162,7 +161,7 @@ export async function GET() {
 			repository: repository.repository,
 			imagesFound: images.length,
 			images: images,
-			processed: 1
+			homepage: repository.homepage,
 		});
 
 	} catch (error) {

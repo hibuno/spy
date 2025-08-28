@@ -1,16 +1,6 @@
 "use client";
 
-import {
- HatGlasses,
- Search,
- TrendingUp,
- Star,
- Home,
- Github,
- Filter,
- Clock,
- Code,
-} from "lucide-react";
+import { HatGlasses, Search, Star, Filter, Clock, Code } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
@@ -327,27 +317,7 @@ export function Header() {
          key={repo.id}
          onSelect={() => handleNavigation(`/${repo.repository}`)}
         >
-         <div className="flex items-start gap-3 w-full">
-          <Github className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-           <div className="font-medium truncate">{repo.title}</div>
-           <div className="text-xs text-muted-foreground truncate mb-1">
-            {repo.repository}
-           </div>
-           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-             <Star className="w-3 h-3" />
-             {repo.stars.toLocaleString()}
-            </span>
-            {repo.languages && (
-             <span className="flex items-center gap-1">
-              <Code className="w-3 h-3" />
-              {repo.languages.split(",")[0]?.trim()}
-             </span>
-            )}
-           </div>
-          </div>
-         </div>
+         {repo.title}
         </CommandItem>
        ))}
       </CommandGroup>
@@ -367,53 +337,6 @@ export function Header() {
         </CommandItem>
        ))}
       </CommandGroup>
-     )}
-
-     {(!searchValue || searchResults.length === 0) && (
-      <>
-       <CommandGroup heading="Navigation">
-        <CommandItem onSelect={() => handleNavigation("/")}>
-         <Home className="w-4 h-4 mr-2" />
-         Go to homepage
-        </CommandItem>
-        <CommandItem onSelect={() => handleNavigation("/?filter=trending")}>
-         <TrendingUp className="w-4 h-4 mr-2" />
-         View trending repositories
-        </CommandItem>
-        <CommandItem onSelect={() => handleNavigation("/?filter=popular")}>
-         <Star className="w-4 h-4 mr-2" />
-         View popular projects
-        </CommandItem>
-       </CommandGroup>
-       <CommandGroup heading="Search & Discover">
-        <CommandItem onSelect={() => setOpen(false)}>
-         <Search className="w-4 h-4 mr-2" />
-         Search all repositories
-        </CommandItem>
-        <CommandItem onSelect={() => handleNavigation("/?filter=beginner")}>
-         <Star className="w-4 h-4 mr-2" />
-         Find beginner-friendly projects
-        </CommandItem>
-        <CommandItem onSelect={() => handleNavigation("/?filter=advanced")}>
-         <TrendingUp className="w-4 h-4 mr-2" />
-         Discover advanced projects
-        </CommandItem>
-       </CommandGroup>
-       <CommandGroup heading="External Links">
-        <CommandItem
-         onSelect={() => window.open("https://github.com/trending", "_blank")}
-        >
-         <Github className="w-4 h-4 mr-2" />
-         GitHub Trending
-        </CommandItem>
-        <CommandItem
-         onSelect={() => window.open("https://github.com", "_blank")}
-        >
-         <Github className="w-4 h-4 mr-2" />
-         GitHub Homepage
-        </CommandItem>
-       </CommandGroup>
-      </>
      )}
 
      <CommandEmpty>

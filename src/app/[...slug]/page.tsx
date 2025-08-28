@@ -23,6 +23,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Lightning from "@/components/lightning";
 import type { Metadata } from "next";
+import Threads from "@/components/threads";
 
 interface PageProps {
  params: {
@@ -348,44 +349,44 @@ export default async function RepositoryDetail({ params }: PageProps) {
      </div>
     </div>
 
-    <div className="">
-     {/* Header */}
-     <div className="border-b p-6">
-      {/* Repository Header */}
-      <div className="flex items-start justify-between gap-4">
-       <div className="flex items-start gap-3 flex-1 min-w-0">
-        <div className="flex-1 min-w-0">
-         <h1 className="text-xl font-serif font-bold text-foreground mb-2">
-          {getOwnerRepo()}
-         </h1>
-         <div className="flex items-center gap-1.5 mb-2">
-          {repository.experience && (
-           <Badge
-            className={`${getExperienceColor(
-             repository.experience
-            )} border font-medium text-xs`}
-           >
-            <Award className="w-2.5 h-2.5 mr-1" />
-            {repository.experience}
-           </Badge>
-          )}
-          {isTrending && (
-           <Badge className="bg-muted text-muted-foreground border-border border font-medium text-xs">
-            <Activity className="w-2.5 h-2.5 mr-1" />
-            Trending
-           </Badge>
-          )}
-          {isPopular && (
-           <Badge className="bg-muted text-muted-foreground border-border border font-medium text-xs">
-            <Star className="w-2.5 h-2.5 mr-1" />
-            Popular
-           </Badge>
-          )}
-         </div>
-         <p className="text-sm text-muted-foreground leading-relaxed">
-          {repository.summary}
-         </p>
+    <div className="relative bg-background border-b p-6">
+     <div className="w-1/2 h-[200px] absolute -top-10 right-0 z-0 opacity-35">
+      <Threads amplitude={1} distance={0} enableMouseInteraction={true} />
+      <div className="bg-gradient-to-r from-background to-transparent absolute top-0 left-0 w-full h-full"></div>
+     </div>
+     <div className="flex items-start justify-between gap-4 relative z-10">
+      <div className="flex items-start gap-3 flex-1 min-w-0">
+       <div className="flex-1 min-w-0">
+        <h1 className="text-xl font-serif font-bold text-foreground mb-2">
+         {getOwnerRepo()}
+        </h1>
+        <div className="flex items-center gap-1.5 mb-2">
+         {repository.experience && (
+          <Badge
+           className={`${getExperienceColor(
+            repository.experience
+           )} border font-medium text-xs`}
+          >
+           <Award className="w-2.5 h-2.5 mr-1" />
+           {repository.experience}
+          </Badge>
+         )}
+         {isTrending && (
+          <Badge className="bg-muted text-muted-foreground border-border border font-medium text-xs">
+           <Activity className="w-2.5 h-2.5 mr-1" />
+           Trending
+          </Badge>
+         )}
+         {isPopular && (
+          <Badge className="bg-muted text-muted-foreground border-border border font-medium text-xs">
+           <Star className="w-2.5 h-2.5 mr-1" />
+           Popular
+          </Badge>
+         )}
         </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+         {repository.summary}
+        </p>
        </div>
       </div>
      </div>
