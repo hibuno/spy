@@ -9,12 +9,9 @@ import Image from "next/image";
 
 interface RepositoryCardProps {
  repository: Repository;
- variant?: "default" | "compact";
 }
 
-export function RepositoryCard({
- repository,
-}: RepositoryCardProps) {
+export function RepositoryCard({ repository }: RepositoryCardProps) {
  const [currentImageIndex] = useState(0);
  const [imageError, setImageError] = useState(false);
 
@@ -58,13 +55,13 @@ export function RepositoryCard({
  const getExperienceColor = (experience: string) => {
   switch (experience?.toLowerCase()) {
    case "beginner":
-    return "bg-green-50 text-green-700 border-green-200";
+    return "bg-green-50 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-800";
    case "intermediate":
-    return "bg-blue-50 text-blue-700 border-blue-200";
+    return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800";
    case "advanced":
-    return "bg-purple-50 text-purple-700 border-purple-200";
+    return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-800";
    default:
-    return "bg-gray-50 text-gray-700 border-gray-200";
+    return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-800";
   }
  };
 
@@ -91,82 +88,91 @@ export function RepositoryCard({
   return colors[language.toLowerCase()] || "bg-gray-400";
  };
 
- const CardContent = () => (
-  <div className="repo-card">
-   {/* Preview Image */}
-   <div className="relative h-32 bg-gray-100 overflow-hidden">
-    {hasImages ? (
-     <Image
-      src={images[currentImageIndex]}
-      alt={`${repository.title} preview`}
-      fill
-      className="object-cover"
-      onError={() => setImageError(true)}
-     />
-    ) : (
-     <div className="flex items-center justify-center h-full text-gray-400">
-      <ImageIcon className="w-8 h-8" />
-     </div>
-    )}
-   </div>
-
-   {/* Content */}
-   <div className="p-4 flex-1 flex flex-col">
-    {/* Header */}
-    <div className="flex items-start justify-between gap-2 mb-3">
-     <h3 className="font-serif font-semibold text-gray-900 line-clamp-2 leading-tight text-sm">
-      {repository.title}
-     </h3>
-     {repository.experience && (
-      <Badge
-       className={`text-xs px-2 py-0.5 font-medium border flex-shrink-0 ${getExperienceColor(
-        repository.experience
-       )}`}
-      >
-       {repository.experience}
-      </Badge>
+ return (
+  <Link
+   href={`/${repository.repository}`}
+   className="block w-[calc(100%/3-1px)] bg-background"
+  >
+   <div className="repo-card">
+    {/* Preview Image */}
+    <div className="relative h-32 bg-muted overflow-hidden">
+     {hasImages ? (
+      <Image
+       src={images[currentImageIndex]}
+       alt={`${repository.title} preview`}
+       fill
+       className="object-cover"
+       onError={() => setImageError(true)}
+      />
+     ) : (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+       <ImageIcon className="w-8 h-8" />
+      </div>
      )}
     </div>
 
-    {/* Description */}
-    <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed mb-4 flex-1">
-     {repository.summary || "No description available"}
-    </p>
+    {/* Content */}
+    <div className="p-4 flex-1 flex flex-col">
+     {/* Header */}
+     <div className="flex items-start justify-between gap-2 mb-3">
+      <h3 className="font-serif font-semibold text-foreground line-clamp-2 leading-tight text-sm">
+       {repository.title}
+      </h3>
+     </div>
 
-    {/* Stats */}
-    <div className="flex items-center justify-between mb-3">
-     <div className="flex items-center gap-3 text-xs">
-      <div className="flex items-center gap-1">
-       <Star className="w-3 h-3 text-yellow-500" />
-       <span className="font-medium text-gray-700">
-        {formatNumber(repository.stars || 0)}
-       </span>
+     {/* Description */}
+     <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed mb-3 flex-1">
+      {repository.summary || "No description available"}
+     </p>
+
+     {/* Stats */}
+     <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-3 text-xs">
+       <div className="flex items-center gap-1">
+        <Star className="w-3 h-3 text-yellow-500" />
+        <span className="font-medium text-foreground">
+         {formatNumber(repository.stars || 0)}
+        </span>
+       </div>
+       <div className="flex items-center gap-1">
+        <GitFork className="w-3 h-3 text-blue-500" />
+        <span className="font-medium text-foreground">
+         {formatNumber(repository.forks || 0)}
+        </span>
+       </div>
       </div>
-      <div className="flex items-center gap-1">
-       <GitFork className="w-3 h-3 text-blue-500" />
-       <span className="font-medium text-gray-700">
-        {formatNumber(repository.forks || 0)}
-       </span>
-      </div>
+      {repository.experience && (
+       <Badge
+        className={`text-[10px] px-1.5 py-0.5 font-medium border flex-shrink-0 ${getExperienceColor(
+         repository.experience
+        )}`}
+       >
+        {repository.experience}
+       </Badge>
+      )}
+     </div>
+
+     {/* Language */}
+     <div className="flex items-center gap-2">
+      {languages.length > 0 &&
+       languages.slice(0, 5).map((language) => (
+        <div className="flex items-center gap-1" key={language}>
+         <div
+          className={`w-2 h-2 rounded-full ${getLanguageColor(language)}`}
+         />
+         <div className="text-[10px] text-muted-foreground font-medium">
+          {language}
+         </div>
+        </div>
+       ))}
+      {languages.length > 5 && (
+       <div className="text-[10px] text-muted-foreground font-medium">
+        +{languages.length - 5}
+       </div>
+      )}
      </div>
     </div>
-
-    {/* Language */}
-    {languages.length > 0 && (
-     <div className="flex items-center gap-2">
-      <div
-       className={`w-3 h-3 rounded-full ${getLanguageColor(languages[0])}`}
-      />
-      <span className="text-xs text-gray-600 font-medium">{languages[0]}</span>
-     </div>
-    )}
    </div>
-  </div>
- );
-
- return (
-  <Link href={`/${repository.repository}`} className="block">
-   <CardContent />
   </Link>
  );
 }

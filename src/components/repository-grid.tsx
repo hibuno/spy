@@ -5,12 +5,9 @@ import { RepositoryCard } from "./repository-card";
 
 interface RepositoryGridProps {
  repositories: Repository[];
- variant?: "default" | "compact";
 }
 
-export function RepositoryGrid({
- repositories,
-}: RepositoryGridProps) {
+export function RepositoryGrid({ repositories }: RepositoryGridProps) {
  if (repositories.length === 0) {
   return (
    <div className="text-center py-12">
@@ -20,9 +17,9 @@ export function RepositoryGrid({
  }
 
  return (
-  <div className="repo-grid">
+  <div className="flex flex-wrap gap-[1px] bg-border">
    {repositories.map((repo) => (
-    <RepositoryCard key={repo.id} repository={repo} variant="compact" />
+    <RepositoryCard key={repo.id} repository={repo} />
    ))}
   </div>
  );

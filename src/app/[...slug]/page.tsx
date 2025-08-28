@@ -1,6 +1,5 @@
 import { supabase, Repository } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RepositoryGrid } from "@/components/repository-grid";
 import {
@@ -111,13 +110,13 @@ const formatDate = (date: string) => {
 const getExperienceColor = (experience: string) => {
  switch (experience?.toLowerCase()) {
   case "beginner":
-   return "bg-green-50 text-green-700 border-green-200";
+   return "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100 dark:border-green-700";
   case "intermediate":
-   return "bg-blue-50 text-blue-700 border-blue-200";
+   return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700";
   case "advanced":
-   return "bg-purple-50 text-purple-700 border-purple-200";
+   return "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-100 dark:border-purple-700";
   default:
-   return "bg-gray-50 text-gray-700 border-gray-200";
+   return "bg-muted text-muted-foreground border-border";
  }
 };
 
@@ -150,43 +149,43 @@ export default async function RepositoryDetail({ params }: PageProps) {
  const isTrending = repository.stars > 5000;
 
  return (
-  <div className="min-h-screen bg-gray-100">
-   {/* Header */}
-   <div className="bg-white border-b border-gray-200">
-    <div className="max-w-6xl mx-auto px-6 py-6">
-     <div className="flex items-center justify-between mb-6">
-      <Link
-       href="/"
-       className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-      >
-       <ArrowLeft className="w-4 h-4" />
-       Back to Trending
-      </Link>
-      <div className="flex items-center gap-3">
-       <Button variant="outline" size="sm" className="border-gray-300">
-        <Share2 className="w-4 h-4 mr-2" />
-        Share
-       </Button>
-       <Button variant="outline" size="sm" className="border-gray-300">
-        <Heart className="w-4 h-4 mr-2" />
-        Save
-       </Button>
-      </div>
-     </div>
+  <div className="w-full max-w-6xl mx-auto border-x">
+   <div className="flex items-center justify-between px-6 py-2.5 sticky top-[93px] z-50 bg-background border-b">
+    <Link
+     href="/"
+     className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+    >
+     <ArrowLeft className="w-4 h-4" />
+     Back to Trending
+    </Link>
+    <div className="flex items-center gap-3">
+     <Button variant="outline" size="sm" className="border-border">
+      <Share2 className="w-4 h-4 mr-2" />
+      Share
+     </Button>
+     <Button variant="outline" size="sm" className="border-border">
+      <Heart className="w-4 h-4 mr-2" />
+      Save
+     </Button>
+    </div>
+   </div>
 
+   <div className="">
+    {/* Header */}
+    <div className="border-b p-6">
      {/* Repository Header */}
-     <div className="space-y-6">
+     <div className="">
       <div className="flex items-start justify-between gap-6">
        <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 mb-4">
-         <div className="p-3 bg-gray-100 rounded-xl border border-gray-200">
-          <Github className="w-8 h-8 text-gray-700" />
+         <div className="p-3 bg-muted rounded-xl border border-border">
+          <Github className="w-8 h-8 text-muted-foreground" />
          </div>
          <div>
-          <h1 className="text-3xl font-serif font-bold text-gray-900 mb-1">
+          <h1 className="text-3xl font-serif font-bold text-foreground mb-1">
            {getOwnerRepo()}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
            {repository.experience && (
             <Badge
              className={`${getExperienceColor(
@@ -198,13 +197,13 @@ export default async function RepositoryDetail({ params }: PageProps) {
             </Badge>
            )}
            {isTrending && (
-            <Badge className="bg-orange-50 text-orange-700 border-orange-200 border font-medium">
+            <Badge className="bg-muted text-muted-foreground border-border border font-medium">
              <Activity className="w-3 h-3 mr-1" />
              Trending
             </Badge>
            )}
            {isPopular && (
-            <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 border font-medium">
+            <Badge className="bg-muted text-muted-foreground border-border border font-medium">
              <Star className="w-3 h-3 mr-1" />
              Popular
             </Badge>
@@ -212,49 +211,9 @@ export default async function RepositoryDetail({ params }: PageProps) {
           </div>
          </div>
         </div>
-        <p className="text-xl text-gray-600 leading-relaxed mb-6 max-w-3xl">
+        <p className="text-lg text-muted-foreground leading-relaxed mb-4 max-w-3xl">
          {repository.summary}
         </p>
-       </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-       <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-         <Star className="w-5 h-5 text-yellow-500" />
-        </div>
-        <div className="text-2xl font-serif font-bold text-gray-900">
-         {formatNumber(repository.stars)}
-        </div>
-        <div className="text-sm text-gray-600">Stars</div>
-       </div>
-       <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-         <GitFork className="w-5 h-5 text-blue-500" />
-        </div>
-        <div className="text-2xl font-serif font-bold text-gray-900">
-         {formatNumber(repository.forks)}
-        </div>
-        <div className="text-sm text-gray-600">Forks</div>
-       </div>
-       <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-         <Eye className="w-5 h-5 text-green-500" />
-        </div>
-        <div className="text-2xl font-serif font-bold text-gray-900">
-         {formatNumber(repository.watching)}
-        </div>
-        <div className="text-sm text-gray-600">Watching</div>
-       </div>
-       <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-         <AlertCircle className="w-5 h-5 text-red-500" />
-        </div>
-        <div className="text-2xl font-serif font-bold text-gray-900">
-         {formatNumber(repository.open_issues)}
-        </div>
-        <div className="text-sm text-gray-600">Issues</div>
        </div>
       </div>
 
@@ -263,7 +222,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
        <Button
         asChild
         size="lg"
-        className="bg-gray-900 hover:bg-gray-800 text-white"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground"
        >
         <Link
          href={`https://github.com/${slug}`}
@@ -275,7 +234,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
         </Link>
        </Button>
        {repository.homepage && (
-        <Button asChild variant="outline" size="lg" className="border-gray-300">
+        <Button asChild variant="outline" size="lg" className="border-border">
          <Link
           href={repository.homepage}
           target="_blank"
@@ -292,37 +251,37 @@ export default async function RepositoryDetail({ params }: PageProps) {
    </div>
 
    {/* Main Content */}
-   <div className="max-w-6xl mx-auto px-6 py-12">
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+   <div className="max-w-6xl mx-auto">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1px] bg-border">
      {/* Main Content */}
-     <div className="lg:col-span-2 space-y-8">
+     <div className="lg:col-span-2 space-y-[1px]">
       {/* About Section */}
       {repository.content && (
-       <Card className="p-8 bg-white border border-gray-200">
+       <div className="p-8 bg-background">
         <div className="flex items-center gap-3 mb-6">
-         <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+         <div className="p-2 bg-muted rounded-lg border border-border">
           <BookOpen className="w-5 h-5 text-blue-600" />
          </div>
-         <h2 className="text-2xl font-serif font-bold text-gray-900">
+         <h2 className="text-2xl font-serif font-bold text-foreground">
           About This Project
          </h2>
         </div>
         <div className="prose max-w-none">
-         <div className="text-gray-700 leading-relaxed whitespace-pre-line text-base font-mono">
+         <div className="text-muted-foreground leading-relaxed whitespace-pre-line text-base font-mono">
           {repository.content}
          </div>
         </div>
-       </Card>
+       </div>
       )}
 
       {/* Languages & Technologies */}
       {languages.length > 0 && (
-       <Card className="p-8 bg-white border border-gray-200">
+       <div className="p-8 bg-background">
         <div className="flex items-center gap-3 mb-6">
-         <div className="p-2 bg-purple-50 rounded-lg border border-purple-200">
+         <div className="p-2 bg-muted rounded-lg border border-border">
           <Code className="w-5 h-5 text-purple-600" />
          </div>
-         <h2 className="text-2xl font-serif font-bold text-gray-900">
+         <h2 className="text-2xl font-serif font-bold text-foreground">
           Languages & Technologies
          </h2>
         </div>
@@ -330,7 +289,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
          {languages.map((lang, index) => (
           <div
            key={index}
-           className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200"
+           className="flex items-center gap-3 p-4 bg-muted rounded-xl border border-border"
           >
            <div
             className={`w-4 h-4 rounded-full ${
@@ -347,21 +306,21 @@ export default async function RepositoryDetail({ params }: PageProps) {
               : "bg-gray-400"
             }`}
            />
-           <span className="font-medium text-gray-900">{lang}</span>
+           <span className="font-medium text-foreground">{lang}</span>
           </div>
          ))}
         </div>
-       </Card>
+       </div>
       )}
 
       {/* Tags */}
       {tags.length > 0 && (
-       <Card className="p-8 bg-white border border-gray-200">
+       <div className="p-8 bg-background">
         <div className="flex items-center gap-3 mb-6">
-         <div className="p-2 bg-pink-50 rounded-lg border border-pink-200">
+         <div className="p-2 bg-muted rounded-lg border border-border">
           <Zap className="w-5 h-5 text-pink-600" />
          </div>
-         <h2 className="text-2xl font-serif font-bold text-gray-900">
+         <h2 className="text-2xl font-serif font-bold text-foreground">
           Tags & Categories
          </h2>
         </div>
@@ -369,123 +328,125 @@ export default async function RepositoryDetail({ params }: PageProps) {
          {tags.map((tag, index) => (
           <Badge
            key={index}
-           className="text-sm px-4 py-2 bg-purple-50 text-purple-700 border-purple-200 border font-medium"
+           className="text-sm px-4 py-2 bg-muted text-muted-foreground border-border border font-medium"
           >
            #{tag}
           </Badge>
          ))}
         </div>
-       </Card>
+       </div>
       )}
      </div>
 
      {/* Sidebar */}
-     <div className="space-y-6">
+     <div className="space-y-[1px]">
       {/* Project Details */}
-      <Card className="p-6 bg-white border border-gray-200">
-       <h3 className="text-lg font-serif font-bold text-gray-900 mb-4">
+      <div className="p-6 bg-background">
+       <h3 className="text-lg font-serif font-bold text-foreground mb-4">
         Project Details
        </h3>
-       <div className="space-y-4">
+       <div className="space-y-2">
         <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2 text-gray-600">
+         <div className="flex items-center gap-2 text-muted-foreground">
           <Shield className="w-4 h-4" />
           <span className="text-sm">License</span>
          </div>
-         <Badge variant="outline" className="text-xs border-gray-300">
+         <Badge variant="outline" className="text-xs border-border">
           {repository.license || "Not specified"}
          </Badge>
         </div>
         <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2 text-gray-600">
+         <div className="flex items-center gap-2 text-muted-foreground">
           <Calendar className="w-4 h-4" />
           <span className="text-sm">Created</span>
          </div>
-         <span className="text-sm text-gray-900 font-medium">
+         <span className="text-sm text-foreground font-medium">
           {formatDate(repository.created_at)}
          </span>
         </div>
         <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2 text-gray-600">
+         <div className="flex items-center gap-2 text-muted-foreground">
           <Clock className="w-4 h-4" />
           <span className="text-sm">Updated</span>
          </div>
-         <span className="text-sm text-gray-900 font-medium">
+         <span className="text-sm text-foreground font-medium">
           {formatDate(repository.updated_at || repository.created_at)}
          </span>
         </div>
         <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2 text-gray-600">
+         <div className="flex items-center gap-2 text-muted-foreground">
           <GitBranch className="w-4 h-4" />
           <span className="text-sm">Default Branch</span>
          </div>
-         <Badge variant="outline" className="text-xs border-gray-300">
+         <Badge variant="outline" className="text-xs border-border">
           {repository.default_branch || "main"}
          </Badge>
         </div>
        </div>
-      </Card>
+      </div>
 
       {/* Repository Stats */}
-      <Card className="p-6 bg-white border border-gray-200">
-       <h3 className="text-lg font-serif font-bold text-gray-900 mb-4">
+      <div className="p-6 bg-background">
+       <h3 className="text-lg font-serif font-bold text-foreground mb-4">
         Repository Statistics
        </h3>
        <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
          <div className="flex items-center gap-2">
           <Star className="w-4 h-4 text-yellow-500" />
-          <span className="text-sm font-medium">Stars</span>
+          <span className="text-sm font-medium text-foreground">Stars</span>
          </div>
-         <span className="text-lg font-serif font-bold text-gray-900">
+         <span className="text-lg font-serif font-bold text-foreground">
           {formatNumber(repository.stars)}
          </span>
         </div>
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
          <div className="flex items-center gap-2">
           <GitFork className="w-4 h-4 text-blue-500" />
-          <span className="text-sm font-medium">Forks</span>
+          <span className="text-sm font-medium text-foreground">Forks</span>
          </div>
-         <span className="text-lg font-serif font-bold text-gray-900">
+         <span className="text-lg font-serif font-bold text-foreground">
           {formatNumber(repository.forks)}
          </span>
         </div>
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
          <div className="flex items-center gap-2">
           <Eye className="w-4 h-4 text-green-500" />
-          <span className="text-sm font-medium">Watchers</span>
+          <span className="text-sm font-medium text-foreground">Watchers</span>
          </div>
-         <span className="text-lg font-serif font-bold text-gray-900">
+         <span className="text-lg font-serif font-bold text-foreground">
           {formatNumber(repository.watching)}
          </span>
         </div>
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
          <div className="flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-red-500" />
-          <span className="text-sm font-medium">Open Issues</span>
+          <span className="text-sm font-medium text-foreground">
+           Open Issues
+          </span>
          </div>
-         <span className="text-lg font-serif font-bold text-gray-900">
+         <span className="text-lg font-serif font-bold text-foreground">
           {formatNumber(repository.open_issues)}
          </span>
         </div>
        </div>
-      </Card>
+      </div>
      </div>
     </div>
 
     {/* Related Repositories */}
     {relatedRepos.length > 0 && (
-     <div className="mt-16">
-      <div className="text-center mb-12">
-       <h2 className="text-3xl font-serif font-bold text-gray-900 mb-4">
+     <>
+      <div className="flex items-center justify-between px-6 py-4 border-y">
+       <h2 className="font-serif font-bold text-foreground">
         Related Projects
        </h2>
-       <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+       <p className="text-sm text-muted-foreground">
         Discover more amazing projects similar to this one
        </p>
       </div>
       <RepositoryGrid repositories={relatedRepos} />
-     </div>
+     </>
     )}
    </div>
   </div>

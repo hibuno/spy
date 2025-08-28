@@ -1,16 +1,18 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter, Caveat } from "next/font/google";
+import { Urbanist, Fira_Mono } from "next/font/google";
 import { Databuddy } from "@databuddy/sdk/react";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Header } from "@/components/header";
 
-const inter = Inter({
+const urbanist = Urbanist({
  subsets: ["latin"],
  variable: "--font-sans",
 });
 
-const caveat = Caveat({
+const firaMono = Fira_Mono({
  subsets: ["latin"],
- weight: ["700"],
+ weight: ["500"],
  variable: "--font-serif",
 });
 
@@ -26,9 +28,13 @@ export default function RootLayout({
  children: React.ReactNode;
 }) {
  return (
-  <html lang="en">
-   <body className={`${inter.variable} ${caveat.variable} font-sans`}>
-    {children}
+  <html lang="en" suppressHydrationWarning>
+   <body className={`${urbanist.variable} ${firaMono.variable} font-sans`}>
+    <ThemeProvider defaultTheme="system">
+     {/* Header Section */}
+     <Header />
+     {children}
+    </ThemeProvider>
     {process.env.NODE_ENV === "production" && (
      <Databuddy
       clientId="OohGWURJGFcKN4A5aQ7gT"

@@ -1,6 +1,6 @@
 import { supabase, Repository } from "@/lib/supabase";
-import { TrendingHeader } from "@/components/trending-header";
-import { HomeClient } from "@/components/home-client";
+import { HomeClient } from "@/app/page-client";
+import { Radar } from "@/components/radar";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -86,20 +86,17 @@ export default async function Home() {
   await getInitialData();
 
  return (
-  <div className="min-h-screen bg-gray-50">
-   {/* Container with consistent max width */}
-   <div className="max-w-7xl mx-auto bg-white shadow-sm">
-    {/* Header Section */}
-    <TrendingHeader />
+  <div className="max-w-6xl mx-auto border-x">
+   {/* Radar Section */}
+   <Radar />
 
-    {/* Main Content */}
-    <HomeClient
-     initialRepositories={repositories}
-     popularRepos={popularRepos}
-     recommendedRepos={recommendedRepos}
-     initialTotalCount={totalCount}
-    />
-   </div>
+   {/* Main Content */}
+   <HomeClient
+    initialRepositories={repositories}
+    popularRepos={popularRepos}
+    recommendedRepos={recommendedRepos}
+    initialTotalCount={totalCount}
+   />
   </div>
  );
 }

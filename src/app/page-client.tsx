@@ -5,7 +5,7 @@ import { supabase, Repository } from "@/lib/supabase";
 import { RepositoryGrid } from "@/components/repository-grid";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, TrendingUp, Star } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -117,21 +117,17 @@ export function HomeClient({
 
  if (error) {
   return (
-   <div className="section-spacing text-center">
-    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-200">
-     <RefreshCw className="w-8 h-8 text-red-600" />
+   <div className="text-center h-screen">
+    <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-destructive/20">
+     <RefreshCw className="w-8 h-8 text-destructive" />
     </div>
-    <h2 className="text-xl font-serif font-semibold text-gray-900 mb-2">
+    <h2 className="text-xl font-serif font-semibold text-foreground mb-2">
      Connection Error
     </h2>
-    <p className="text-gray-600 mb-4">
+    <p className="text-muted-foreground mb-4">
      Unable to load repositories. Please check your connection.
     </p>
-    <Button
-     onClick={handleRefresh}
-     variant="outline"
-     className="border-gray-300"
-    >
+    <Button onClick={handleRefresh} variant="outline" className="border-border">
      <RefreshCw className="w-4 h-4 mr-2" />
      Try Again
     </Button>
@@ -140,51 +136,35 @@ export function HomeClient({
  }
 
  return (
-  <div className="bg-white">
+  <div>
    {/* Most Popular Section */}
    {popularRepos.length > 0 && (
-    <section className="section-spacing">
-     <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-3">
-       <div className="p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-        <Star className="w-5 h-5 text-yellow-600" />
-       </div>
-       <div>
-        <h2 className="text-xl font-serif font-bold text-gray-900">
-         Most Popular
-        </h2>
-        <p className="text-sm text-gray-600">
-         Repositories with the highest star count
-        </p>
-       </div>
-      </div>
+    <>
+     <div className="flex items-center justify-between px-6 py-4 border-b">
+      <h2 className="font-serif font-bold text-foreground">Most Popular</h2>
+      <p className="text-sm text-muted-foreground">
+       Repositories with the highest star count
+      </p>
      </div>
      <RepositoryGrid repositories={popularRepos} />
-    </section>
+    </>
    )}
 
    {/* All Repositories Section */}
-   <section className="section-spacing">
-    <div className="flex items-center justify-between mb-6">
-     <div className="flex items-center gap-3">
-      <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
-       <TrendingUp className="w-5 h-5 text-blue-600" />
-      </div>
-      <div>
-       <h2 className="text-xl font-serif font-bold text-gray-900">
-        All Repositories
-       </h2>
-       <p className="text-sm text-gray-600">
-        {totalCount.toLocaleString()}+ total repositories
-       </p>
-      </div>
+   <>
+    <div className="flex items-center justify-between border-y px-6 py-4">
+     <div>
+      <h2 className="font-serif font-bold text-foreground">All Repositories</h2>
+      <p className="text-sm text-muted-foreground">
+       {totalCount.toLocaleString()}+ total repositories
+      </p>
      </div>
      <Button
       onClick={handleRefresh}
       variant="outline"
       size="sm"
       disabled={refreshing}
-      className="gap-2 border-gray-300"
+      className="gap-2 border-border"
      >
       <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
       Refresh
@@ -194,13 +174,13 @@ export function HomeClient({
     {loading ? (
      <div className="flex items-center justify-center py-12">
       <div className="text-center space-y-4">
-       <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
-       <p className="text-gray-600">Loading repositories...</p>
+       <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+       <p className="text-muted-foreground">Loading repositories...</p>
       </div>
      </div>
     ) : repositories.length === 0 ? (
      <div className="text-center py-12">
-      <p className="text-gray-600">
+      <p className="text-muted-foreground">
        No repositories found. Add some data to your Supabase database.
       </p>
      </div>
@@ -214,14 +194,16 @@ export function HomeClient({
       {loadingMore && (
        <div className="flex items-center justify-center py-8">
         <div className="text-center space-y-2">
-         <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
-         <p className="text-sm text-gray-500">Loading more repositories...</p>
+         <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
+         <p className="text-sm text-muted-foreground">
+          Loading more repositories...
+         </p>
         </div>
        </div>
       )}
      </InfiniteScroll>
     )}
-   </section>
+   </>
   </div>
  );
 }
