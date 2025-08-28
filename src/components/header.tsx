@@ -1,6 +1,5 @@
 "use client";
 
-import { ThemeToggle } from "@/components/theme-toggle";
 import { HatGlasses } from "lucide-react";
 import Link from "next/link";
 
@@ -20,7 +19,6 @@ export function Header() {
      </div>
     </Link>
    </div>
-   <ThemeToggle />
   </div>
  );
 }

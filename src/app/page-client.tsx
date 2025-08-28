@@ -6,6 +6,7 @@ import { RepositoryGrid } from "@/components/repository-grid";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
+import Lightning from "@/components/lightning";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -25,14 +26,12 @@ export function HomeClient({
  const [repositories, setRepositories] =
   useState<Repository[]>(initialRepositories);
  const [loading, setLoading] = useState(false);
- const [refreshing, setRefreshing] = useState(false);
  const [loadingMore, setLoadingMore] = useState(false);
  const [hasMore, setHasMore] = useState(
   initialRepositories.length === ITEMS_PER_PAGE
  );
  const [page, setPage] = useState(1);
  const [error, setError] = useState<string | null>(null);
- const [totalCount, setTotalCount] = useState(initialTotalCount);
 
  // Get IDs of repositories already shown in featured sections
  const featuredIds = new Set([
@@ -40,25 +39,9 @@ export function HomeClient({
   ...recommendedRepos.map((repo) => repo.id),
  ]);
 
- const fetchTotalCount = async () => {
+ const fetchRepositories = async (pageNum = 1) => {
   try {
-   const { count, error } = await supabase
-    .from("repositories")
-    .select("*", { count: "exact", head: true })
-    .eq("archived", false)
-    .eq("disabled", false);
-
-   if (error) throw error;
-   setTotalCount(count || 0);
-  } catch (err) {
-   console.error("Error fetching total count:", err);
-  }
- };
-
- const fetchRepositories = async (isRefresh = false, pageNum = 1) => {
-  try {
-   if (isRefresh) setRefreshing(true);
-   else if (pageNum === 1) setLoading(true);
+   if (pageNum === 1) setLoading(true);
    else setLoadingMore(true);
 
    setError(null);
@@ -79,7 +62,7 @@ export function HomeClient({
 
    const newData = data || [];
 
-   if (isRefresh || pageNum === 1) {
+   if (pageNum === 1) {
     setRepositories(newData);
     setPage(1);
    } else {
@@ -87,32 +70,27 @@ export function HomeClient({
    }
 
    setHasMore(newData.length === ITEMS_PER_PAGE);
-   if (!isRefresh && pageNum > 1) {
+   if (pageNum > 1) {
     setPage(pageNum);
-   }
-
-   if (isRefresh) {
-    fetchTotalCount();
    }
   } catch (err) {
    setError(err instanceof Error ? err.message : "An error occurred");
   } finally {
    setLoading(false);
-   setRefreshing(false);
    setLoadingMore(false);
   }
  };
 
  const loadMore = () => {
   if (!loadingMore && hasMore) {
-   fetchRepositories(false, page + 1);
+   fetchRepositories(page + 1);
   }
  };
 
  const handleRefresh = () => {
   setPage(1);
   setHasMore(true);
-  fetchRepositories(true);
+  fetchRepositories();
  };
 
  if (error) {
@@ -140,8 +118,13 @@ export function HomeClient({
    {/* Most Popular Section */}
    {popularRepos.length > 0 && (
     <>
-     <div className="flex items-center justify-between px-6 py-4 border-b">
-      <h2 className="font-serif font-bold text-foreground">Most Popular</h2>
+     <div className="flex items-center justify-between px-6 py-4 border-b relative bg-black overflow-hidden">
+      <h2 className="font-serif font-bold text-foreground z-10">
+       Most Popular
+      </h2>
+      <div className="absolute z-0">
+       <Lightning hue={0} xOffset={0} speed={1} intensity={1} size={1} />
+      </div>
       <p className="text-sm text-muted-foreground">
        Repositories with the highest star count
       </p>
@@ -152,23 +135,16 @@ export function HomeClient({
 
    {/* All Repositories Section */}
    <>
-    <div className="flex items-center justify-between border-y px-6 py-4">
-     <div>
-      <h2 className="font-serif font-bold text-foreground">All Repositories</h2>
-      <p className="text-sm text-muted-foreground">
-       {totalCount.toLocaleString()}+ total repositories
-      </p>
+    <div className="flex items-center justify-between px-6 py-4 border-y relative bg-black overflow-hidden">
+     <h2 className="font-serif font-bold text-foreground z-10">
+      All Repositories
+     </h2>
+     <div className="absolute z-0">
+      <Lightning hue={250} xOffset={1} speed={0.8} intensity={0.6} size={1} />
      </div>
-     <Button
-      onClick={handleRefresh}
-      variant="outline"
-      size="sm"
-      disabled={refreshing}
-      className="gap-2 border-border"
-     >
-      <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-      Refresh
-     </Button>
+     <p className="text-sm text-muted-foreground">
+      {initialTotalCount.toLocaleString()}+ total repositories
+     </p>
     </div>
 
     {loading ? (

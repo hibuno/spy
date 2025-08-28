@@ -55,13 +55,13 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
  const getExperienceColor = (experience: string) => {
   switch (experience?.toLowerCase()) {
    case "beginner":
-    return "bg-green-50 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-800";
+    return "bg-green-900 text-green-200 border-green-800";
    case "intermediate":
-    return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800";
+    return "bg-blue-900 text-blue-200 border-blue-800";
    case "advanced":
-    return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-800";
+    return "bg-purple-900 text-purple-200 border-purple-800";
    default:
-    return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-800";
+    return "bg-gray-900 text-gray-200 border-gray-800";
   }
  };
 

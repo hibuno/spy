@@ -10,8 +10,6 @@ import {
  Github,
  Calendar,
  AlertCircle,
- Code,
- Zap,
  Activity,
  Award,
  Globe,
@@ -19,11 +17,11 @@ import {
  Shield,
  Clock,
  GitBranch,
- Heart,
  Share2,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Lightning from "@/components/lightning";
 
 interface PageProps {
  params: {
@@ -110,11 +108,11 @@ const formatDate = (date: string) => {
 const getExperienceColor = (experience: string) => {
  switch (experience?.toLowerCase()) {
   case "beginner":
-   return "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100 dark:border-green-700";
+   return "bg-green-900 text-green-100 border-green-700";
   case "intermediate":
-   return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700";
+   return "bg-blue-900 text-blue-100 border-blue-700";
   case "advanced":
-   return "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-100 dark:border-purple-700";
+   return "bg-purple-900 text-purple-100 border-purple-700";
   default:
    return "bg-muted text-muted-foreground border-border";
  }
@@ -150,22 +148,43 @@ export default async function RepositoryDetail({ params }: PageProps) {
 
  return (
   <div className="w-full max-w-6xl mx-auto border-x">
-   <div className="flex items-center justify-between px-6 py-2.5 sticky top-[93px] z-50 bg-background border-b">
+   <div className="flex items-center justify-between px-6 py-2 sticky top-[93px] z-50 bg-background border-b">
     <Link
      href="/"
-     className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+     className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
     >
      <ArrowLeft className="w-4 h-4" />
      Back to Trending
     </Link>
-    <div className="flex items-center gap-3">
-     <Button variant="outline" size="sm" className="border-border">
-      <Share2 className="w-4 h-4 mr-2" />
-      Share
+    <div className="flex items-center gap-2">
+     <Button
+      asChild
+      className="bg-primary hover:bg-primary/90 text-primary-foreground py-1.5 h-auto"
+     >
+      <Link
+       href={`https://github.com/${slug}`}
+       target="_blank"
+       rel="noopener noreferrer"
+      >
+       <Github className="w-3.5 h-3.5" />
+       GitHub
+      </Link>
      </Button>
+     {repository.homepage && (
+      <Button asChild variant="outline" size="sm" className="border-border">
+       <Link
+        href={repository.homepage}
+        target="_blank"
+        rel="noopener noreferrer"
+       >
+        <Globe className="w-3.5 h-3.5 mr-1.5" />
+        Website
+       </Link>
+      </Button>
+     )}
      <Button variant="outline" size="sm" className="border-border">
-      <Heart className="w-4 h-4 mr-2" />
-      Save
+      <Share2 className="w-3.5 h-3.5 mr-1.5" />
+      Share
      </Button>
     </div>
    </div>
@@ -174,77 +193,40 @@ export default async function RepositoryDetail({ params }: PageProps) {
     {/* Header */}
     <div className="border-b p-6">
      {/* Repository Header */}
-     <div className="">
-      <div className="flex items-start justify-between gap-6">
+     <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start gap-3 flex-1 min-w-0">
        <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-3 mb-4">
-         <div className="p-3 bg-muted rounded-xl border border-border">
-          <Github className="w-8 h-8 text-muted-foreground" />
-         </div>
-         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground mb-1">
-           {getOwnerRepo()}
-          </h1>
-          <div className="flex items-center gap-1.5">
-           {repository.experience && (
-            <Badge
-             className={`${getExperienceColor(
-              repository.experience
-             )} border font-medium`}
-            >
-             <Award className="w-3 h-3 mr-1" />
-             {repository.experience}
-            </Badge>
-           )}
-           {isTrending && (
-            <Badge className="bg-muted text-muted-foreground border-border border font-medium">
-             <Activity className="w-3 h-3 mr-1" />
-             Trending
-            </Badge>
-           )}
-           {isPopular && (
-            <Badge className="bg-muted text-muted-foreground border-border border font-medium">
-             <Star className="w-3 h-3 mr-1" />
-             Popular
-            </Badge>
-           )}
-          </div>
-         </div>
+        <h1 className="text-xl font-serif font-bold text-foreground mb-2">
+         {getOwnerRepo()}
+        </h1>
+        <div className="flex items-center gap-1.5 mb-2">
+         {repository.experience && (
+          <Badge
+           className={`${getExperienceColor(
+            repository.experience
+           )} border font-medium text-xs`}
+          >
+           <Award className="w-2.5 h-2.5 mr-1" />
+           {repository.experience}
+          </Badge>
+         )}
+         {isTrending && (
+          <Badge className="bg-muted text-muted-foreground border-border border font-medium text-xs">
+           <Activity className="w-2.5 h-2.5 mr-1" />
+           Trending
+          </Badge>
+         )}
+         {isPopular && (
+          <Badge className="bg-muted text-muted-foreground border-border border font-medium text-xs">
+           <Star className="w-2.5 h-2.5 mr-1" />
+           Popular
+          </Badge>
+         )}
         </div>
-        <p className="text-lg text-muted-foreground leading-relaxed mb-4 max-w-3xl">
+        <p className="text-sm text-muted-foreground leading-relaxed">
          {repository.summary}
         </p>
        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
-       <Button
-        asChild
-        size="lg"
-        className="bg-primary hover:bg-primary/90 text-primary-foreground"
-       >
-        <Link
-         href={`https://github.com/${slug}`}
-         target="_blank"
-         rel="noopener noreferrer"
-        >
-         <Github className="w-5 h-5 mr-2" />
-         View on GitHub
-        </Link>
-       </Button>
-       {repository.homepage && (
-        <Button asChild variant="outline" size="lg" className="border-border">
-         <Link
-          href={repository.homepage}
-          target="_blank"
-          rel="noopener noreferrer"
-         >
-          <Globe className="w-5 h-5 mr-2" />
-          Visit Website
-         </Link>
-        </Button>
-       )}
       </div>
      </div>
     </div>
@@ -257,42 +239,207 @@ export default async function RepositoryDetail({ params }: PageProps) {
      <div className="lg:col-span-2 space-y-[1px]">
       {/* About Section */}
       {repository.content && (
-       <div className="p-8 bg-background">
-        <div className="flex items-center gap-3 mb-6">
-         <div className="p-2 bg-muted rounded-lg border border-border">
-          <BookOpen className="w-5 h-5 text-blue-600" />
+       <div className="p-4 bg-background">
+        <div className="flex items-center gap-2 mb-4">
+         <div className="p-1.5 bg-muted rounded border border-border">
+          <BookOpen className="w-4 h-4 text-blue-600" />
          </div>
-         <h2 className="text-2xl font-serif font-bold text-foreground">
+         <h2 className="text-lg font-serif font-bold text-foreground">
           About This Project
          </h2>
         </div>
         <div className="prose max-w-none">
-         <div className="text-muted-foreground leading-relaxed whitespace-pre-line text-base font-mono">
+         <div className="text-muted-foreground leading-relaxed whitespace-pre-line text-sm prose">
           {repository.content}
          </div>
         </div>
        </div>
       )}
 
-      {/* Languages & Technologies */}
-      {languages.length > 0 && (
-       <div className="p-8 bg-background">
-        <div className="flex items-center gap-3 mb-6">
-         <div className="p-2 bg-muted rounded-lg border border-border">
-          <Code className="w-5 h-5 text-purple-600" />
+      {/* Paper Information */}
+      {(repository.arxiv_url ||
+       repository.huggingface_url ||
+       repository.paper_authors ||
+       repository.paper_abstract) && (
+       <div className="p-4 bg-background">
+        <div className="flex items-center gap-2 mb-4">
+         <div className="p-1.5 bg-muted rounded border border-border">
+          <BookOpen className="w-4 h-4 text-green-600" />
          </div>
-         <h2 className="text-2xl font-serif font-bold text-foreground">
-          Languages & Technologies
+         <h2 className="text-lg font-serif font-bold text-foreground">
+          Research Paper
          </h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="space-y-3">
+         {repository.paper_authors && (
+          <div>
+           <h3 className="text-sm font-semibold text-foreground mb-1">
+            Authors
+           </h3>
+           <p className="text-sm text-muted-foreground">
+            {repository.paper_authors}
+           </p>
+          </div>
+         )}
+         {repository.paper_abstract && (
+          <div>
+           <h3 className="text-sm font-semibold text-foreground mb-1">
+            Abstract
+           </h3>
+           <p className="text-sm text-muted-foreground leading-relaxed">
+            {repository.paper_abstract}
+           </p>
+          </div>
+         )}
+         <div className="flex flex-wrap gap-2">
+          {repository.arxiv_url && (
+           <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-border"
+           >
+            <Link
+             href={repository.arxiv_url}
+             target="_blank"
+             rel="noopener noreferrer"
+            >
+             <BookOpen className="w-3.5 h-3.5 mr-1.5" />
+             View on arXiv
+            </Link>
+           </Button>
+          )}
+          {repository.huggingface_url && (
+           <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-border"
+           >
+            <Link
+             href={repository.huggingface_url}
+             target="_blank"
+             rel="noopener noreferrer"
+            >
+             <Github className="w-3.5 h-3.5 mr-1.5" />
+             Hugging Face
+            </Link>
+           </Button>
+          )}
+         </div>
+        </div>
+       </div>
+      )}
+     </div>
+
+     {/* Sidebar */}
+     <div className="space-y-[1px]">
+      {/* Project Details */}
+      <div className="p-4 bg-background">
+       <h3 className="text-base font-serif font-bold text-foreground mb-3">
+        Project Details
+       </h3>
+       <div className="space-y-2">
+        <div className="flex items-center justify-between">
+         <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Shield className="w-3.5 h-3.5" />
+          <span className="text-xs">License</span>
+         </div>
+         <Badge variant="outline" className="text-xs border-border">
+          {repository.license || "Not specified"}
+         </Badge>
+        </div>
+        <div className="flex items-center justify-between">
+         <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Calendar className="w-3.5 h-3.5" />
+          <span className="text-xs">Added</span>
+         </div>
+         <span className="text-xs text-foreground font-medium">
+          {formatDate(repository.created_at)}
+         </span>
+        </div>
+        <div className="flex items-center justify-between">
+         <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Clock className="w-3.5 h-3.5" />
+          <span className="text-xs">Updated</span>
+         </div>
+         <span className="text-xs text-foreground font-medium">
+          {formatDate(repository.updated_at || repository.created_at)}
+         </span>
+        </div>
+        <div className="flex items-center justify-between">
+         <div className="flex items-center gap-1.5 text-muted-foreground">
+          <GitBranch className="w-3.5 h-3.5" />
+          <span className="text-xs">Default Branch</span>
+         </div>
+         <Badge variant="outline" className="text-xs border-border">
+          {repository.default_branch || "main"}
+         </Badge>
+        </div>
+       </div>
+      </div>
+
+      {/* Repository Stats */}
+      <div className="p-4 bg-background">
+       <h3 className="text-base font-serif font-bold text-foreground mb-3">
+        Repository Statistics
+       </h3>
+       <div className="space-y-3">
+        <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
+         <div className="flex items-center gap-1.5">
+          <Star className="w-3.5 h-3.5 text-yellow-500" />
+          <span className="text-xs font-medium text-foreground">Stars</span>
+         </div>
+         <span className="text-sm font-serif font-bold text-foreground">
+          {formatNumber(repository.stars)}
+         </span>
+        </div>
+        <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
+         <div className="flex items-center gap-1.5">
+          <GitFork className="w-3.5 h-3.5 text-blue-500" />
+          <span className="text-xs font-medium text-foreground">Forks</span>
+         </div>
+         <span className="text-sm font-serif font-bold text-foreground">
+          {formatNumber(repository.forks)}
+         </span>
+        </div>
+        <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
+         <div className="flex items-center gap-1.5">
+          <Eye className="w-3.5 h-3.5 text-green-500" />
+          <span className="text-xs font-medium text-foreground">Watchers</span>
+         </div>
+         <span className="text-sm font-serif font-bold text-foreground">
+          {formatNumber(repository.watching)}
+         </span>
+        </div>
+        <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
+         <div className="flex items-center gap-1.5">
+          <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+          <span className="text-xs font-medium text-foreground">
+           Open Issues
+          </span>
+         </div>
+         <span className="text-sm font-serif font-bold text-foreground">
+          {formatNumber(repository.open_issues)}
+         </span>
+        </div>
+       </div>
+      </div>
+
+      {/* Languages & Technologies */}
+      {languages.length > 0 && (
+       <div className="p-4 bg-background">
+        <h3 className="text-base font-serif font-bold text-foreground mb-3">
+         Languages
+        </h3>
+        <div className="space-y-2">
          {languages.map((lang, index) => (
           <div
            key={index}
-           className="flex items-center gap-3 p-4 bg-muted rounded-xl border border-border"
+           className="flex items-center gap-2 p-2 bg-muted rounded border border-border"
           >
            <div
-            className={`w-4 h-4 rounded-full ${
+            className={`w-2.5 h-2.5 rounded-full ${
              lang === "JavaScript"
               ? "bg-yellow-400"
               : lang === "TypeScript"
@@ -306,7 +453,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
               : "bg-gray-400"
             }`}
            />
-           <span className="font-medium text-foreground">{lang}</span>
+           <span className="font-medium text-foreground text-xs">{lang}</span>
           </div>
          ))}
         </div>
@@ -315,20 +462,15 @@ export default async function RepositoryDetail({ params }: PageProps) {
 
       {/* Tags */}
       {tags.length > 0 && (
-       <div className="p-8 bg-background">
-        <div className="flex items-center gap-3 mb-6">
-         <div className="p-2 bg-muted rounded-lg border border-border">
-          <Zap className="w-5 h-5 text-pink-600" />
-         </div>
-         <h2 className="text-2xl font-serif font-bold text-foreground">
-          Tags & Categories
-         </h2>
-        </div>
-        <div className="flex flex-wrap gap-3">
+       <div className="p-4 bg-background">
+        <h3 className="text-base font-serif font-bold text-foreground mb-3">
+         Tags
+        </h3>
+        <div className="flex flex-wrap gap-1.5">
          {tags.map((tag, index) => (
           <Badge
            key={index}
-           className="text-sm px-4 py-2 bg-muted text-muted-foreground border-border border font-medium"
+           className="text-xs px-2 py-1 bg-muted text-muted-foreground border-border border font-medium"
           >
            #{tag}
           </Badge>
@@ -337,111 +479,41 @@ export default async function RepositoryDetail({ params }: PageProps) {
        </div>
       )}
      </div>
-
-     {/* Sidebar */}
-     <div className="space-y-[1px]">
-      {/* Project Details */}
-      <div className="p-6 bg-background">
-       <h3 className="text-lg font-serif font-bold text-foreground mb-4">
-        Project Details
-       </h3>
-       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2 text-muted-foreground">
-          <Shield className="w-4 h-4" />
-          <span className="text-sm">License</span>
-         </div>
-         <Badge variant="outline" className="text-xs border-border">
-          {repository.license || "Not specified"}
-         </Badge>
-        </div>
-        <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2 text-muted-foreground">
-          <Calendar className="w-4 h-4" />
-          <span className="text-sm">Created</span>
-         </div>
-         <span className="text-sm text-foreground font-medium">
-          {formatDate(repository.created_at)}
-         </span>
-        </div>
-        <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2 text-muted-foreground">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm">Updated</span>
-         </div>
-         <span className="text-sm text-foreground font-medium">
-          {formatDate(repository.updated_at || repository.created_at)}
-         </span>
-        </div>
-        <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2 text-muted-foreground">
-          <GitBranch className="w-4 h-4" />
-          <span className="text-sm">Default Branch</span>
-         </div>
-         <Badge variant="outline" className="text-xs border-border">
-          {repository.default_branch || "main"}
-         </Badge>
-        </div>
-       </div>
-      </div>
-
-      {/* Repository Stats */}
-      <div className="p-6 bg-background">
-       <h3 className="text-lg font-serif font-bold text-foreground mb-4">
-        Repository Statistics
-       </h3>
-       <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
-         <div className="flex items-center gap-2">
-          <Star className="w-4 h-4 text-yellow-500" />
-          <span className="text-sm font-medium text-foreground">Stars</span>
-         </div>
-         <span className="text-lg font-serif font-bold text-foreground">
-          {formatNumber(repository.stars)}
-         </span>
-        </div>
-        <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
-         <div className="flex items-center gap-2">
-          <GitFork className="w-4 h-4 text-blue-500" />
-          <span className="text-sm font-medium text-foreground">Forks</span>
-         </div>
-         <span className="text-lg font-serif font-bold text-foreground">
-          {formatNumber(repository.forks)}
-         </span>
-        </div>
-        <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
-         <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-green-500" />
-          <span className="text-sm font-medium text-foreground">Watchers</span>
-         </div>
-         <span className="text-lg font-serif font-bold text-foreground">
-          {formatNumber(repository.watching)}
-         </span>
-        </div>
-        <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
-         <div className="flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-500" />
-          <span className="text-sm font-medium text-foreground">
-           Open Issues
-          </span>
-         </div>
-         <span className="text-lg font-serif font-bold text-foreground">
-          {formatNumber(repository.open_issues)}
-         </span>
-        </div>
-       </div>
-      </div>
-     </div>
     </div>
+
+    {repository.homepage && (
+     <div className="bg-background overflow-hidden border-y">
+      <div className="p-4 border-b">
+       <div className="flex items-center gap-1.5">
+        <Globe className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-medium text-foreground">
+         Live Preview
+        </span>
+        <Badge variant="outline" className="text-xs border-border ml-auto">
+         External Link
+        </Badge>
+       </div>
+      </div>
+      <iframe
+       src={repository.homepage}
+       className="w-full h-[calc(100vh-200px)] bg-background"
+       title={`${repository.title} preview`}
+       sandbox="allow-scripts allow-same-origin allow-forms"
+      />
+     </div>
+    )}
 
     {/* Related Repositories */}
     {relatedRepos.length > 0 && (
      <>
-      <div className="flex items-center justify-between px-6 py-4 border-y">
-       <h2 className="font-serif font-bold text-foreground">
+      <div className="flex items-center justify-between px-4 py-3 border-y relative bg-black overflow-hidden">
+       <h2 className="font-serif font-bold text-foreground z-10">
         Related Projects
        </h2>
-       <p className="text-sm text-muted-foreground">
+       <div className="absolute z-0">
+        <Lightning hue={0} xOffset={0} speed={1} intensity={1} size={1} />
+       </div>
+       <p className="text-xs text-muted-foreground">
         Discover more amazing projects similar to this one
        </p>
       </div>

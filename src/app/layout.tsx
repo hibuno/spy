@@ -30,7 +30,7 @@ export default function RootLayout({
  return (
   <html lang="en" suppressHydrationWarning>
    <body className={`${urbanist.variable} ${firaMono.variable} font-sans`}>
-    <ThemeProvider defaultTheme="system">
+    <ThemeProvider>
      {/* Header Section */}
      <Header />
      {children}
