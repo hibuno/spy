@@ -234,9 +234,9 @@ export default async function RepositoryDetail({ params }: PageProps) {
 
    {/* Main Content */}
    <div className="max-w-6xl mx-auto">
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1px] bg-border">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-[1px] bg-border">
      {/* Main Content */}
-     <div className="lg:col-span-2 space-y-[1px]">
+     <div className="lg:col-span-2 divide-y bg-background">
       {/* About Section */}
       {repository.content && (
        <div className="p-4 bg-background">
@@ -333,7 +333,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
      </div>
 
      {/* Sidebar */}
-     <div className="space-y-[1px]">
+     <div className="divide-y bg-background">
       {/* Project Details */}
       <div className="p-4 bg-background">
        <h3 className="text-base font-serif font-bold text-foreground mb-3">
