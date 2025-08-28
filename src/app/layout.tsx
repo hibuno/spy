@@ -30,7 +30,18 @@ export default function RootLayout({
    <body className={`${inter.variable} ${caveat.variable} font-sans`}>
     {children}
     {process.env.NODE_ENV === "production" && (
-     <Databuddy clientId="OohGWURJGFcKN4A5aQ7gT" enableBatching={true} />
+     <Databuddy
+      clientId="OohGWURJGFcKN4A5aQ7gT"
+      trackOutgoingLinks={true}
+      trackInteractions={true}
+      trackEngagement={true}
+      trackScrollDepth={true}
+      trackExitIntent={true}
+      trackBounceRate={true}
+      trackWebVitals={true}
+      trackErrors={true}
+      enableBatching={true}
+     />
     )}
    </body>
   </html>
