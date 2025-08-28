@@ -19,8 +19,8 @@ interface ScrapedPaper {
 export async function GET() {
 	try {
 		// Fetch Hugging Face papers page for specific date
-		const targetDate = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())).toISOString().split('T')[0]; // today's date in UTC
-		const response = await fetch(`https://huggingface.co/papers/date/${targetDate}`, {
+		const targetYearMonth = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth())).toISOString().slice(0, 7); // current year and month in UTC
+		const response = await fetch(`https://huggingface.co/papers/month/${targetYearMonth}`, {
 			headers: {
 				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 			}
@@ -154,7 +154,7 @@ export async function GET() {
 
 		return new Response(JSON.stringify({
 			success: true,
-			date: targetDate,
+			date: targetYearMonth,
 			count: papers.filter(paper => !paper.existsInDB).length,
 			totalScraped: papers.length,
 			papers: papers.filter(paper => !paper.existsInDB), // Return only new papers
