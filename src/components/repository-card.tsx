@@ -98,8 +98,8 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
     <div className="relative h-32 bg-muted overflow-hidden">
      {hasImages ? (
       <Image
-       src={images[currentImageIndex]}
-       alt={`${repository.title} preview`}
+       src={(images[currentImageIndex] as unknown as { url: string }).url}
+       alt={(images[currentImageIndex] as unknown as { url: string }).url}
        fill
        className="object-cover"
        onError={() => setImageError(true)}
