@@ -182,8 +182,7 @@ class ContentEnricher {
 			const query = `
 				SELECT id, repository, readme
 				FROM repositories
-				WHERE readme IS NOT NULL
-				AND content IS NULL
+				WHERE enriched = false
 				LIMIT 50
 			`;
 
@@ -330,7 +329,8 @@ Make the article comprehensive but not too long. Focus on what makes this projec
 				SET
 					summary = $1,
 					content = $2,
-					updated_at = $3
+					updated_at = $3,
+					enriched = true
 				WHERE id = $4
 			`;
 

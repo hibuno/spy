@@ -96,8 +96,8 @@ class RepositoryFetcher {
 		try {
 			const query = `
 				SELECT * FROM repositories
-				WHERE 
-					images IS NULL AND created_at IS NULL
+				WHERE ingested = false
+				LIMIT 50
 			`;
 
 			const result = await this.dbClient.query(query);
@@ -302,6 +302,11 @@ class RepositoryFetcher {
 
 	async processImageUrl(imageUrl: string, repoUrl: string, type: string): Promise<ImageItem | null> {
 		try {
+			// Skip obviously invalid URLs
+			if (!imageUrl || imageUrl.trim() === '' || imageUrl === '#') {
+				return null;
+			}
+
 			// Convert relative URLs to absolute
 			let absoluteUrl = imageUrl;
 			if (imageUrl.startsWith('./') || imageUrl.startsWith('../')) {
@@ -310,6 +315,27 @@ class RepositoryFetcher {
 				absoluteUrl = `${repoUrl}${imageUrl}`;
 			} else if (!imageUrl.startsWith('http')) {
 				absoluteUrl = `${repoUrl}/raw/main/${imageUrl}`;
+			}
+
+			// Validate URL format
+			try {
+				new URL(absoluteUrl);
+			} catch {
+				console.log(`Invalid URL format: ${absoluteUrl}`);
+				return null;
+			}
+
+			// Skip common non-image URLs
+			const skipPatterns = [
+				/\.svg$/i,  // SVGs often cause issues with sizeOf
+				/badge/i,   // Badge images
+				/shield/i,  // Shield badges
+				/star-history/i, // Star history images
+				/githubusercontent\.com.*\?.*size/, // GitHub avatar with size param
+			];
+
+			if (skipPatterns.some(pattern => pattern.test(absoluteUrl))) {
+				return null;
 			}
 
 			const dimensions = await this.getImageDimensions(absoluteUrl);
@@ -341,9 +367,32 @@ class RepositoryFetcher {
 			if (!response.ok) return null;
 
 			const buffer = await response.arrayBuffer();
+
+			// Check if buffer has content
+			if (buffer.byteLength === 0) {
+				console.log(`Empty buffer for image: ${imageUrl}`);
+				return null;
+			}
+
+			// Check content type from response headers
+			const contentType = response.headers.get('content-type');
+			if (contentType && !contentType.startsWith('image/')) {
+				console.log(`Invalid content type for image: ${contentType} - ${imageUrl}`);
+				return null;
+			}
+
 			const dimensions = sizeOf(Buffer.from(buffer));
 
-			if (!dimensions.width || !dimensions.height) return null;
+			// Check if dimensions object has required properties
+			if (!dimensions || typeof dimensions.width !== 'number' || typeof dimensions.height !== 'number') {
+				console.log(`Invalid image dimensions for: ${imageUrl}`);
+				return null;
+			}
+
+			if (dimensions.width <= 0 || dimensions.height <= 0) {
+				console.log(`Invalid image dimensions (zero or negative): ${dimensions.width}x${dimensions.height} for ${imageUrl}`);
+				return null;
+			}
 
 			return {
 				width: dimensions.width,
@@ -361,37 +410,96 @@ class RepositoryFetcher {
 		return width >= minWidth && height >= minHeight;
 	}
 
-	async takeScreenshot(url: string): Promise<Buffer | null> {
+	async takeScreenshot(url: string, maxRetries: number = 3): Promise<Buffer | null> {
 		let browser;
-		try {
-			console.log(`📸 Taking screenshot of: ${url}`);
-			browser = await chromium.launch();
-			const page = await browser.newPage();
+		let lastError: Error | null = null;
 
-			// Set viewport size
-			await page.setViewportSize({ width: 1280, height: 720 });
+		for (let attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				console.log(`📸 Taking screenshot of: ${url} (attempt ${attempt}/${maxRetries})`);
+				browser = await chromium.launch({
+					args: [
+						'--no-sandbox',
+						'--disable-setuid-sandbox',
+						'--disable-dev-shm-usage',
+						'--disable-accelerated-2d-canvas',
+						'--no-first-run',
+						'--no-zygote',
+						'--single-process',
+						'--disable-gpu'
+					]
+				});
 
-			// Navigate to the page
-			await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+				const context = await browser.newContext({
+					userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+				});
 
-			// Wait a bit for dynamic content to load
-			await page.waitForTimeout(2000);
+				const page = await context.newPage();
 
-			// Take screenshot
-			const screenshot = await page.screenshot({
-				fullPage: false,
-				type: 'png'
-			});
+				// Set viewport size
+				await page.setViewportSize({ width: 1280, height: 720 });
 
-			return screenshot as Buffer;
-		} catch (error) {
-			console.error('❌ Error taking screenshot:', error);
-			return null;
-		} finally {
-			if (browser) {
-				await browser.close();
+				// Set longer timeout for navigation
+				const timeout = attempt === 1 ? 45000 : 30000; // Longer timeout for first attempt
+
+				// Navigate to the page with error handling
+				try {
+					await page.goto(url, {
+						waitUntil: 'domcontentloaded', // Less strict than networkidle
+						timeout: timeout
+					});
+				} catch (navError) {
+					// If navigation fails, try with load event
+					console.log(`Navigation failed with domcontentloaded, trying with load event...`);
+					await page.goto(url, {
+						waitUntil: 'load',
+						timeout: timeout
+					});
+				}
+
+				// Wait for page to stabilize
+				await page.waitForTimeout(3000);
+
+				// Check if page has content
+				const content = await page.content();
+				if (!content || content.length < 100) {
+					throw new Error('Page appears to be empty or blocked');
+				}
+
+				// Take screenshot
+				const screenshot = await page.screenshot({
+					fullPage: false,
+					type: 'png'
+				});
+
+				await context.close();
+				return screenshot as Buffer;
+
+			} catch (error) {
+				lastError = error as Error;
+				console.error(`❌ Screenshot attempt ${attempt} failed:`, error);
+
+				// Clean up browser instance
+				if (browser) {
+					try {
+						await browser.close();
+					} catch (closeError) {
+						console.error('Error closing browser:', closeError);
+					}
+					browser = null;
+				}
+
+				// If this is not the last attempt, wait before retrying
+				if (attempt < maxRetries) {
+					const waitTime = attempt * 2000; // Progressive backoff
+					console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+					await new Promise(resolve => setTimeout(resolve, waitTime));
+				}
 			}
 		}
+
+		console.error(`❌ All ${maxRetries} screenshot attempts failed for ${url}. Last error:`, lastError);
+		return null;
 	}
 
 	async uploadToSupabaseStorage(buffer: Buffer, fileName: string): Promise<string | null> {
@@ -435,14 +543,18 @@ class RepositoryFetcher {
 	}
 
 	async processRepository(repository: Repository): Promise<void> {
+		let githubInfo: GitHubRepository | null = null;
+		let readmeContent: string | null = null;
+		let homepageUrl: string | null = null;
+
 		try {
 			console.log(`\n📦 Processing repository: ${repository.repository}`);
 
 			// Get GitHub information
-			const githubInfo = await this.getGitHubRepositoryInfo(repository.repository);
+			githubInfo = await this.getGitHubRepositoryInfo(repository.repository);
 
 			// Get README content
-			const readmeContent = await this.getGitHubReadme(repository.repository);
+			readmeContent = await this.getGitHubReadme(repository.repository);
 
 			// Extract images from README if available
 			let readmeImages: ImageItem[] = [];
@@ -453,7 +565,7 @@ class RepositoryFetcher {
 			}
 
 			// Determine homepage URL
-			let homepageUrl = githubInfo.homepage;
+			homepageUrl = githubInfo.homepage || null;
 
 			// If no homepage in GitHub data, try to extract from README
 			if (!homepageUrl && readmeContent) {
@@ -494,7 +606,8 @@ class RepositoryFetcher {
 					images = $4,
 					homepage = $5,
 					stars = $6,
-					forks = $7
+					forks = $7,
+					ingested = true
 				WHERE id = $8
 			`;
 
@@ -539,6 +652,40 @@ class RepositoryFetcher {
 
 		} catch (error) {
 			console.error(`❌ Error processing repository ${repository.repository}:`, error);
+
+			// Try to update the repository with partial information if we have GitHub data
+			try {
+				if (githubInfo) {
+					const updateQuery = `
+						UPDATE repositories
+						SET
+							created_at = $1,
+							readme = $2,
+							license = $3,
+							homepage = $4,
+							stars = $5,
+							forks = $6
+						WHERE id = $7
+					`;
+
+					const licenseName = githubInfo.license?.name || null;
+
+					await this.dbClient.query(updateQuery, [
+						githubInfo.created_at,
+						readmeContent || null,
+						licenseName,
+						homepageUrl || null,
+						githubInfo.stargazers_count,
+						githubInfo.forks_count,
+						repository.id
+					]);
+
+					console.log(`📝 Updated repository with partial information due to error`);
+				}
+			} catch (updateError) {
+				console.error('❌ Error updating repository with partial data:', updateError);
+			}
+
 			// Continue with next repository instead of exiting
 		}
 	}
