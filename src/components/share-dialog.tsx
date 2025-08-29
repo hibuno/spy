@@ -27,8 +27,7 @@ export default function ShareDialog({
  baseUrl,
 }: ShareDialogProps) {
  const [copied, setCopied] = useState(false);
- const siteUrl =
-  baseUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com";
+ const siteUrl = baseUrl || "https://spy.hibuno.com";
  const shareUrl = `${siteUrl}/${slug}`;
 
  const copyToClipboard = async () => {

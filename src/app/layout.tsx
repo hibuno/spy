@@ -42,9 +42,7 @@ export const metadata: Metadata = {
   address: false,
   telephone: false,
  },
- metadataBase: new URL(
-  process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com"
- ),
+ metadataBase: new URL("https://spy.hibuno.com"),
  alternates: {
   canonical: "/",
  },
@@ -113,21 +111,19 @@ export default function RootLayout({
        name: "The Spy Project",
        description:
         "Discover trending repositories and rising star projects from GitHub, GitLab, and other platforms.",
-       url: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
+       url: "https://spy.hibuno.com",
        potentialAction: {
         "@type": "SearchAction",
         target: {
          "@type": "EntryPoint",
-         urlTemplate: `${
-          process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com"
-         }?q={search_term_string}`,
+         urlTemplate: `${"https://spy.hibuno.com"}?q={search_term_string}`,
         },
         "query-input": "required name=search_term_string",
        },
        publisher: {
         "@type": "Organization",
         name: "The Spy Project",
-        url: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
+        url: "https://spy.hibuno.com",
        },
       }),
      }}

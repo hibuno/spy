@@ -26,9 +26,7 @@ export const metadata: Metadata = {
  authors: [{ name: "The Spy Project" }],
  creator: "The Spy Project",
  publisher: "The Spy Project",
- metadataBase: new URL(
-  process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com"
- ),
+ metadataBase: new URL("https://spy.hibuno.com"),
  alternates: {
   canonical: "/",
  },
@@ -116,6 +114,7 @@ async function getInitialData(): Promise<{
    .select("*")
    .eq("publish", true)
    .order("created_at", { ascending: false })
+   .not("id", "in", `(${recommendedRepos.map(({ id }) => id).join(",")})`)
    .limit(ITEMS_PER_PAGE);
 
   if (initialError) throw initialError;
@@ -145,7 +144,7 @@ export default async function Home() {
   name: "The Spy Project - Trending Repositories",
   description:
    "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
+  url: "https://spy.hibuno.com",
   mainEntity: {
    "@type": "ItemList",
    name: "Trending Repositories",
@@ -181,14 +180,14 @@ export default async function Home() {
      "@type": "ListItem",
      position: 1,
      name: "Home",
-     item: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
+     item: "https://spy.hibuno.com",
     },
    ],
   },
   publisher: {
    "@type": "Organization",
    name: "The Spy Project",
-   url: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
+   url: "https://spy.hibuno.com",
   },
  };
 
