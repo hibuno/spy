@@ -22,8 +22,8 @@ export function Footer() {
    </div>
    <div className="container mx-auto p-4 border-t">
     <p className="text-center text-xs leading-loose text-muted-foreground">
-     Powered by Vercel, N8N, DataBuddy, and Supabase. Source data from GitHub
-     and Hugging Face.
+     Powered by Vercel, N8N, DataBuddy, and Supabase. Source data from GitHub,
+     OSS Insight, and Hugging Face.
     </p>
    </div>
   </footer>
