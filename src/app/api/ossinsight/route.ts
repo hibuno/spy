@@ -35,7 +35,7 @@ export async function GET() {
 
 		repositories.sort((a, b) => parseInt(b.stars) - parseInt(a.stars));
 
-		repositories.forEach(repo => {
+		repositories.filter(({ stars }) => parseInt(stars) > 50).forEach(repo => {
 			scrapedRepos.push({
 				href: repo.repo_name,
 				url: `https://github.com/${repo.repo_name}`,
@@ -53,9 +53,11 @@ export async function GET() {
 			existingRepos.data?.map(repo => repo.repository) || []
 		);
 
+		const bracket: Array<{ href: string; url: string; name: string; existsInDB?: boolean }> = [];
+
 		// Add database status to each repository
 		scrapedRepos.forEach(repo => {
-			scrapedRepos.push({
+			bracket.push({
 				...repo,
 				existsInDB: existingHrefs.has(repo.href)
 			});
@@ -63,8 +65,8 @@ export async function GET() {
 
 		return new Response(JSON.stringify({
 			success: true,
-			count: scrapedRepos.slice(0, 50).filter(repo => !repo.existsInDB).length,
-			repositories: scrapedRepos.slice(0, 50).filter(repo => !repo.existsInDB),
+			count: bracket.filter(repo => !repo.existsInDB).slice(0, 50).length,
+			repositories: bracket.filter(repo => !repo.existsInDB).slice(0, 50),
 			timestamp: new Date().toISOString()
 		}), {
 			headers: { 'Content-Type': 'application/json' }
