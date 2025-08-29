@@ -176,7 +176,8 @@ async function getRepository(slug: string): Promise<{
     .neq("id", repository.id)
     .eq("archived", false)
     .eq("disabled", false)
-    .order("stars", { ascending: false })
+    .eq("languages", repository.languages)
+    .order("created_at", { ascending: false })
     .limit(6);
 
    if (!relatedError) {

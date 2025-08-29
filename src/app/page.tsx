@@ -92,7 +92,8 @@ async function getInitialData(): Promise<{
    .select("*")
    .eq("archived", false)
    .eq("disabled", false)
-   .gte("stars", 10000) // At least 100 stars
+   .gte("stars", 1000) // At least 1k stars
+   .lte("stars", 10000) // Less than 10K stars
    .order("created_at", { ascending: false }) // Order by forks for diversity
    .limit(6);
 
