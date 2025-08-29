@@ -162,7 +162,7 @@ class ContentEnricher {
 			const query = `
 				SELECT id, repository, readme
 				FROM repositories
-				WHERE enriched = false
+				WHERE ingested = true AND enriched = false
 				LIMIT 50
 			`;
 
