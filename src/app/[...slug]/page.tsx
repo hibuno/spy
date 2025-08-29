@@ -470,7 +470,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
           </h2>
          </div>
          <div className="prose max-w-none">
-          <div className="text-muted-foreground leading-relaxed text-sm prose prose-sm max-w-none prose">
+          <div className="text-muted-foreground leading-relaxed text-sm prose prose-sm max-w-none">
            <ReactMarkdown
             components={{
              h1: ({ children }) => (

@@ -22,7 +22,6 @@ export default function LazyIframe({
  const [isLoading, setIsLoading] = useState(true);
  const [isInView, setIsInView] = useState(loading === "eager");
  const [hasError, setHasError] = useState(false);
- const [showIframe, setShowIframe] = useState(false);
  const iframeRef = useRef<HTMLIFrameElement>(null);
  const containerRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +64,6 @@ export default function LazyIframe({
  };
 
  const handleShowIframe = () => {
-  setShowIframe(true);
   setIsInView(true);
  };
 
@@ -107,7 +105,6 @@ export default function LazyIframe({
       onClick={() => {
        setHasError(false);
        setIsLoading(true);
-       setShowIframe(true);
       }}
       variant="outline"
       size="sm"
