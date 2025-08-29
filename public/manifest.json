@@ -10,9 +10,13 @@
 	"scope": "/",
 	"lang": "en-US",
 	"categories": [
+		"books",
+		"business",
+		"education",
+		"magazines",
+		"news",
 		"productivity",
-		"developer-tools",
-		"education"
+		"social"
 	],
 	"icons": [
 		{
@@ -477,5 +481,6 @@
 				}
 			]
 		}
-	]
+	],
+	"prefer_related_applications": false
 }
