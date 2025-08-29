@@ -31,27 +31,40 @@ export async function GET() {
 
 		const apiResponse = await response.json();
 		const repositories: OSSInsightRepository[] = apiResponse.data.rows;
+		const scrapedRepos: Array<{ href: string; url: string; name: string; existsInDB?: boolean }> = [];
+
+		repositories.sort((a, b) => parseInt(b.stars) - parseInt(a.stars));
+
+		repositories.forEach(repo => {
+			scrapedRepos.push({
+				href: repo.repo_name,
+				url: `https://github.com/${repo.repo_name}`,
+				name: repo.repo_name
+			});
+		});
 
 		// Check which repositories already exist in the database
 		const existingRepos = await supabase
 			.from('repositories')
 			.select('repository')
-			.in('repository', repositories.map(repo => repo.repo_name));
+			.in('repository', scrapedRepos.map(repo => repo.href));
 
-		const existingRepoNames = new Set(
+		const existingHrefs = new Set(
 			existingRepos.data?.map(repo => repo.repository) || []
 		);
 
 		// Add database status to each repository
-		const repositoriesWithStatus = repositories.map(repo => ({
-			...repo,
-			existsInDB: existingRepoNames.has(repo.repo_name)
-		}));
+		scrapedRepos.forEach(repo => {
+			scrapedRepos.push({
+				...repo,
+				existsInDB: existingHrefs.has(repo.href)
+			});
+		});
 
 		return new Response(JSON.stringify({
 			success: true,
-			count: repositoriesWithStatus.filter(repo => !repo.existsInDB).length,
-			repositories: repositoriesWithStatus.filter(repo => !repo.existsInDB),
+			count: scrapedRepos.slice(0, 50).filter(repo => !repo.existsInDB).length,
+			repositories: scrapedRepos.slice(0, 50).filter(repo => !repo.existsInDB),
 			timestamp: new Date().toISOString()
 		}), {
 			headers: { 'Content-Type': 'application/json' }
