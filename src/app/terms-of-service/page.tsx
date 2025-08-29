@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   type: "website",
   images: [
    {
-    url: "/og-image.png",
+    url: "/banner.webp",
     width: 1200,
     height: 630,
     alt: "Terms of Service - The Spy Project",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   title: "Terms of Service - The Spy Project",
   description:
    "Terms of Service for The Spy Project. Please read these terms carefully before using our platform.",
-  images: ["/og-image.png"],
+  images: ["/banner.webp"],
   creator: "@thespyproject",
   site: "@thespyproject",
  },
