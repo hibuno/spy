@@ -1,6 +1,5 @@
 CREATE TABLE public.repositories (
   id uuid not null default extensions.uuid_generate_v4 (),
-  title character varying null,
   summary character varying null,
   content text null,
   languages character varying null,

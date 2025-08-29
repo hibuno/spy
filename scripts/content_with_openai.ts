@@ -8,7 +8,6 @@ interface Repository {
 	id: string;
 	repository: string;
 	readme?: string;
-	title?: string;
 	summary?: string;
 	content?: string;
 }
@@ -22,7 +21,6 @@ interface OpenAIResponse {
 }
 
 interface GeneratedContent {
-	title: string;
 	summary: string;
 	content: string;
 }
@@ -162,10 +160,10 @@ class ContentEnricher {
 	async getRepositoriesNeedingEnrichment(): Promise<Repository[]> {
 		try {
 			const query = `
-				SELECT id, repository, readme, title, summary, content
+				SELECT id, repository, readme, summary, content
 				FROM repositories
 				WHERE readme IS NOT NULL
-				AND (title IS NULL OR summary IS NULL OR content IS NULL)
+				AND (summary IS NULL OR content IS NULL)
 				LIMIT 50
 			`;
 
@@ -207,12 +205,10 @@ README Content:
 ${cleanedReadme}
 
 Please generate:
-1. A compelling title for the article
-2. A brief summary/excerpt (2-3 sentences)
-3. The full article content in markdown format
+1. A brief summary/excerpt (2-3 sentences)
+2. The full article content in markdown format
 
 Format your response exactly like this:
-title: [Your title here]
 summary: [Your summary here]
 content: [Your full article content in markdown]
 
@@ -268,16 +264,12 @@ Make the article comprehensive but not too long. Focus on what makes this projec
 		try {
 			// Split content into lines for easier parsing
 			const lines = content.split('\n');
-			let title = '';
 			let summary = '';
 			let articleContent = '';
 			let currentSection = '';
 
 			for (const line of lines) {
-				if (line.toLowerCase().startsWith('title:')) {
-					currentSection = 'title';
-					title = line.substring(6).trim();
-				} else if (line.toLowerCase().startsWith('summary:')) {
+				if (line.toLowerCase().startsWith('summary:')) {
 					currentSection = 'summary';
 					summary = line.substring(8).trim();
 				} else if (line.toLowerCase().startsWith('content:')) {
@@ -285,9 +277,7 @@ Make the article comprehensive but not too long. Focus on what makes this projec
 					articleContent = line.substring(8).trim();
 				} else if (currentSection && line.trim()) {
 					// Continue adding to current section
-					if (currentSection === 'title') {
-						title += ' ' + line.trim();
-					} else if (currentSection === 'summary') {
+					if (currentSection === 'summary') {
 						summary += ' ' + line.trim();
 					} else if (currentSection === 'content') {
 						articleContent += '\n' + line;
@@ -295,13 +285,12 @@ Make the article comprehensive but not too long. Focus on what makes this projec
 				}
 			}
 
-			if (!title || !summary || !articleContent) {
+			if (!summary || !articleContent) {
 				console.error('❌ Failed to parse generated content format');
 				return null;
 			}
 
 			return {
-				title: title.trim(),
 				summary: summary.trim(),
 				content: articleContent.trim()
 			};
@@ -316,15 +305,13 @@ Make the article comprehensive but not too long. Focus on what makes this projec
 			const updateQuery = `
 				UPDATE repositories
 				SET
-					title = $1,
-					summary = $2,
-					content = $3,
-					updated_at = $4
-				WHERE id = $5
+					summary = $1,
+					content = $2,
+					updated_at = $3
+				WHERE id = $4
 			`;
 
 			await this.dbClient.query(updateQuery, [
-				generatedContent.title,
 				generatedContent.summary,
 				generatedContent.content,
 				new Date().toISOString(),
@@ -348,7 +335,6 @@ Make the article comprehensive but not too long. Focus on what makes this projec
 				await this.updateRepositoryContent(repository.id, generatedContent);
 
 				console.log(`✅ Successfully enriched content for ${repository.repository}`);
-				console.log(`   📛 Title: ${generatedContent.title.substring(0, 60)}...`);
 				console.log(`   📄 Summary: ${generatedContent.summary.substring(0, 60)}...`);
 			} else {
 				console.log(`⚠️  Failed to generate content for ${repository.repository}`);

@@ -142,7 +142,7 @@ export default async function Home() {
    itemListElement: repositories.slice(0, 10).map((repo, index) => ({
     "@type": "SoftwareSourceCode",
     position: index + 1,
-    name: repo.title,
+    name: repo.repository,
     description: repo.summary,
     url: repo.repository,
     programmingLanguage: repo.languages?.split(",")[0]?.trim(),

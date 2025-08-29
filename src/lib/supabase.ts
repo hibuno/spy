@@ -28,7 +28,6 @@ export interface ImageItem {
 
 export interface Repository {
 	id: string
-	title: string
 	summary: string
 	content: string
 	languages: string

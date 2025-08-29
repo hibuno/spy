@@ -386,9 +386,8 @@ class RepositoryFetcher {
 			       images = $4,
 			       homepage = $5,
 			       stars = $6,
-			       forks = $7,
-			       updated_at = $8
-			     WHERE id = $9
+			       forks = $7
+			     WHERE id = $8
 			   `;
 
 			const licenseName = githubInfo.license?.name || null;
@@ -401,7 +400,6 @@ class RepositoryFetcher {
 				githubInfo.homepage,
 				githubInfo.stargazers_count,
 				githubInfo.forks_count,
-				new Date().toISOString(),
 				repository.id
 			]);
 

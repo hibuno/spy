@@ -113,7 +113,7 @@ export function RepositoryCard({ repository, className }: RepositoryCardProps) {
      {/* Header */}
      <div className="flex items-start justify-between gap-2 mb-3">
       <h3 className="font-serif font-semibold text-foreground line-clamp-2 leading-tight text-sm">
-       {repository.title}
+       {repository.repository}
       </h3>
      </div>
 

@@ -80,7 +80,7 @@ export function HomeClient({
     // Apply search filter
     if (searchFilters.search) {
      query = query.or(
-      `title.ilike.%${searchFilters.search}%,summary.ilike.%${searchFilters.search}%,repository.ilike.%${searchFilters.search}%,languages.ilike.%${searchFilters.search}%,tags.ilike.%${searchFilters.search}%`
+      `summary.ilike.%${searchFilters.search}%,repository.ilike.%${searchFilters.search}%,languages.ilike.%${searchFilters.search}%,tags.ilike.%${searchFilters.search}%`
      );
     }
 

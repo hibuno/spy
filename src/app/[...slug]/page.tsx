@@ -24,19 +24,27 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Lightning from "@/components/lightning";
 import type { Metadata } from "next";
-import Threads from "@/components/threads";
-import Image from "next/image";
+import dynamic from "next/dynamic";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import ShareDialog from "@/components/share-dialog";
 import ReactMarkdown from "react-markdown";
+import LazyIframe from "@/components/lazy-iframe";
+import LazyImage from "@/components/lazy-image";
 
 interface PageProps {
  params: {
   slug: string[];
  };
 }
+
+const Lightning = dynamic(() => import("@/components/lightning"), {
+ loading: () => <div className="absolute inset-0 bg-muted/10 rounded" />,
+});
+
+const Threads = dynamic(() => import("@/components/threads"), {
+ loading: () => <div className="w-1/2 h-[200px] bg-muted/20 rounded" />,
+});
 
 export async function generateMetadata({
  params,
@@ -52,10 +60,7 @@ export async function generateMetadata({
   };
  }
 
- const ownerRepo = repository.repository
-  ? repository.repository.match(/github\.com\/([^\/]+\/[^\/]+)/)?.[1] ||
-    repository.title
-  : repository.title;
+ const ownerRepo = repository.repository.split("/")[1];
 
  const description =
   repository.summary ||
@@ -150,18 +155,6 @@ async function getRepository(slug: string): Promise<{
 
   if (!repoError) {
    repository = repos;
-  } else if (repoError.code === "PGRST116") {
-   // If not found by GitHub URL, try to find by title slug
-   const titleSlug = slug.replace(/-/g, " ");
-   const { data: titleRepos, error: titleError } = await supabase
-    .from("repositories")
-    .select("*")
-    .ilike("title", `%${titleSlug}%`)
-    .single();
-
-   if (!titleError) {
-    repository = titleRepos;
-   }
   }
 
   if (!repository) {
@@ -262,13 +255,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
 
  // Extract owner/repo from repository URL for display
  const getOwnerRepo = () => {
-  if (repository.repository) {
-   const match = repository.repository.match(/github\.com\/([^\/]+\/[^\/]+)/);
-   if (match) {
-    return match[1];
-   }
-  }
-  return repository.title;
+  return repository.repository.split("/")[1];
  };
 
  const isPopular = repository.stars > 1000;
@@ -287,7 +274,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
   runtimePlatform: repository.languages?.split(",")[0]?.trim(),
   author: {
    "@type": "Organization",
-   name: repository.paper_authors || getOwnerRepo().split("/")[0],
+   name: repository.paper_authors || "N/A",
   },
   publisher: {
    "@type": "Organization",
@@ -412,7 +399,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
       <div className="flex items-start gap-3 flex-1 min-w-0">
        <div className="flex-1 min-w-0">
         <h1 className="text-xl font-serif font-bold text-foreground mb-2">
-         {getOwnerRepo()}
+         {repository.repository}
         </h1>
         <div className="flex items-center gap-1.5 mb-2 flex-wrap">
          {repository.experience && (
@@ -479,11 +466,11 @@ export default async function RepositoryDetail({ params }: PageProps) {
            <BookOpen className="w-4 h-4 text-blue-600" />
           </div>
           <h2 className="text-lg font-serif font-bold text-foreground">
-           About This Project
+           Introduction
           </h2>
          </div>
          <div className="prose max-w-none">
-          <div className="text-muted-foreground leading-relaxed text-sm prose prose-sm max-w-none">
+          <div className="text-muted-foreground leading-relaxed text-sm prose prose-sm max-w-none prose">
            <ReactMarkdown
             components={{
              h1: ({ children }) => (
@@ -504,17 +491,6 @@ export default async function RepositoryDetail({ params }: PageProps) {
              p: ({ children }) => (
               <p className="mb-2 leading-relaxed">{children}</p>
              ),
-             ul: ({ children }) => (
-              <ul className="list-disc list-inside mb-2 space-y-1">
-               {children}
-              </ul>
-             ),
-             ol: ({ children }) => (
-              <ol className="list-decimal list-inside mb-2 space-y-1">
-               {children}
-              </ol>
-             ),
-             li: ({ children }) => <li className="text-sm">{children}</li>,
              code: ({ children }) => (
               <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
                {children}
@@ -618,12 +594,13 @@ export default async function RepositoryDetail({ params }: PageProps) {
                image.url &&
                image.url !== "" && (
                 <div key={index} className="flex-shrink-0">
-                 <Image
+                 <LazyImage
                   src={image.url}
                   alt={`Preview ${index + 1}`}
                   className="object-cover rounded border border-border"
                   width={image.width || 400}
                   height={image.height || 200}
+                  showLoadingIndicator={true}
                  />
                 </div>
                )
@@ -824,11 +801,12 @@ export default async function RepositoryDetail({ params }: PageProps) {
          </Badge>
         </div>
        </div>
-       <iframe
+       <LazyIframe
         src={repository.homepage}
-        className="w-full h-[calc(100vh-200px)] bg-background"
-        title={`${repository.title} preview`}
-        sandbox="allow-scripts allow-same-origin allow-forms"
+        title={`${repository.repository} preview`}
+        className="w-full"
+        height="h-[calc(100vh-200px)]"
+        loading="lazy"
        />
       </div>
      )}
