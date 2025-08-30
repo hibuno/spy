@@ -69,6 +69,9 @@ export const metadata: Metadata = {
  },
 };
 
+// Revalidate every hour (3600 seconds) since data doesn't change frequently
+export const revalidate = 3600;
+
 async function getInitialData(): Promise<{
  repositories: Repository[];
  recommendedRepos: Repository[];
