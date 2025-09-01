@@ -87,26 +87,14 @@ async function getInitialData(): Promise<{
   if (countError) throw countError;
 
   // Get recommended repositories (high stars + recent activity)
-  const { data: recommendedData, error: recommendedError } = await supabase
-   .from("repositories")
-   .select("*")
-   .eq("publish", true)
-   .gte("stars", 50) // At least 50 stars
-   .lte("stars", 1000) // Less than 1000 stars
-   .gte(
-    "created_at",
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-   ) // Start of the current month
-   .lt(
-    "created_at",
-    new Date(
-     new Date().getFullYear(),
-     new Date().getMonth() + 1,
-     1
-    ).toISOString()
-   ) // Start of the next month
-   .order("stars", { ascending: false }) // Order by forks for diversity
-   .limit(12);
+  const { data: recommendedData, error: recommendedError } = await supabase.rpc(
+   "get_recommended_repos",
+   {
+    min_stars: 50,
+    max_stars: 1000,
+    limit_count: 12,
+   }
+  );
 
   if (recommendedError) throw recommendedError;
   const recommendedRepos = recommendedData || [];
@@ -117,7 +105,11 @@ async function getInitialData(): Promise<{
    .select("*")
    .eq("publish", true)
    .order("created_at", { ascending: false })
-   .not("id", "in", `(${recommendedRepos.map(({ id }) => id).join(",")})`)
+   .not(
+    "id",
+    "in",
+    `(${recommendedRepos.map(({ id }: { id: string }) => id).join(",")})`
+   )
    .limit(ITEMS_PER_PAGE);
 
   if (initialError) throw initialError;

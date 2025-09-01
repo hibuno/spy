@@ -92,7 +92,7 @@ export function RepositoryCard({ repository, className }: RepositoryCardProps) {
   <Link
    href={`/${repository.repository}`}
    className={cn(
-    "block w-[calc(100%/2-1px)] md:w-[calc(100%/3-1px)] bg-background overflow-hidden",
+    "block w-full md:w-[calc(100%/3-1px)] bg-background overflow-hidden group",
     className
    )}
   >
@@ -105,7 +105,7 @@ export function RepositoryCard({ repository, className }: RepositoryCardProps) {
         src={images[currentImageIndex].url}
         alt={images[currentImageIndex].url}
         fill
-        className="object-cover"
+        className="object-cover bg-foreground"
         onError={() => {
          setImageError(true);
          setCurrentImageIndex(
@@ -124,10 +124,10 @@ export function RepositoryCard({ repository, className }: RepositoryCardProps) {
     </div>
 
     {/* Content */}
-    <div className="p-4 flex-1 flex flex-col">
+    <div className="p-4 flex-1 flex flex-col group-hover:bg-muted">
      {/* Header */}
      <div className="flex items-start justify-between gap-2 mb-3">
-      <h3 className="font-serif font-semibold text-foreground line-clamp-2 leading-tight text-sm">
+      <h3 className="font-serif font-semibold text-foreground line-clamp-2 leading-tight text-sm group-hover:text-primary">
        {repository.repository}
       </h3>
       <div className="text-xs text-muted-foreground">

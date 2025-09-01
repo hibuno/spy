@@ -48,7 +48,6 @@ export interface Repository {
 	open_issues: number
 	default_branch: string
 	network_count: number
-	subscribers_count: number
 	tags: string
 	// Paper-related fields
 	arxiv_url?: string

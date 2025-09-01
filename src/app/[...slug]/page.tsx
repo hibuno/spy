@@ -17,7 +17,6 @@ import {
  Shield,
  Clock,
  GitBranch,
- Users,
  Network,
  Gauge,
  Rocket,
@@ -25,12 +24,11 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import ShareDialog from "@/components/share-dialog";
 import ReactMarkdown from "react-markdown";
-import LazyIframe from "@/components/lazy-iframe";
-import LazyImage from "@/components/lazy-image";
+// import LazyIframe from "@/components/lazy-iframe";
 import { unstable_cache } from "next/cache";
+import { ImagePreviews } from "@/components/image-previews";
 
 interface PageProps {
  params: {
@@ -86,6 +84,10 @@ const getRepository = unstable_cache(
     if (!relatedError) {
      relatedRepos = related || [];
     }
+   }
+
+   if (relatedRepos.length > 3 && relatedRepos.length < 6) {
+    relatedRepos = relatedRepos.slice(0, 3);
    }
 
    return { repository, relatedRepos };
@@ -280,7 +282,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
         rel="noopener noreferrer"
        >
         <Github className="w-3.5 h-3.5" />
-        GitHub
+        GitHub Repository
        </Link>
       </Button>
       {repository.homepage && (
@@ -291,7 +293,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
          rel="noopener noreferrer"
         >
          <Globe className="w-3.5 h-3.5 mr-1.5" />
-         Website
+         Official Website
         </Link>
        </Button>
       )}
@@ -428,6 +430,11 @@ export default async function RepositoryDetail({ params }: PageProps) {
      </div>
     </div>
 
+    {/* Project Previews */}
+    {repository.images && repository.images.length > 0 && (
+     <ImagePreviews images={repository.images} />
+    )}
+
     {/* Main Content */}
     <div className="max-w-6xl mx-auto">
      <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-[1px] bg-border">
@@ -493,13 +500,16 @@ export default async function RepositoryDetail({ params }: PageProps) {
              ),
             }}
            >
-            {repository.content}
+            {repository.content.replace(/\:\s\|/gm, ":\n\n|")}
            </ReactMarkdown>
           </div>
          </div>
         </div>
        )}
+      </div>
 
+      {/* Sidebar */}
+      <div className="divide-y bg-background">
        {/* Paper Information */}
        {(repository.paper_authors || repository.paper_abstract) && (
         <div className="p-4 bg-background">
@@ -545,45 +555,6 @@ export default async function RepositoryDetail({ params }: PageProps) {
          </div>
         </div>
        )}
-      </div>
-
-      {/* Sidebar */}
-      <div className="divide-y bg-background">
-       {/* Project Previews */}
-       {(() => {
-        const images = repository.images;
-
-        return (
-         images.length > 0 && (
-          <div className="p-4 bg-background">
-           <h3 className="text-base font-serif font-bold text-foreground mb-3">
-            Previews
-           </h3>
-           <ScrollArea>
-            <div className="flex gap-2">
-             {images.map(
-              (image, index) =>
-               image.url &&
-               image.url !== "" && (
-                <div key={index} className="flex-shrink-0">
-                 <LazyImage
-                  src={image.url}
-                  alt={`Preview ${index + 1}`}
-                  className="object-cover rounded border border-border"
-                  width={image.width || 400}
-                  height={image.height || 200}
-                  showLoadingIndicator={true}
-                 />
-                </div>
-               )
-             )}
-            </div>
-            <ScrollBar orientation="horizontal" />
-           </ScrollArea>
-          </div>
-         )
-        );
-       })()}
 
        {/* Project Details */}
        <div className="p-4 bg-background">
@@ -689,19 +660,6 @@ export default async function RepositoryDetail({ params }: PageProps) {
            </span>
           </div>
          )}
-         {repository.subscribers_count > 0 && (
-          <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
-           <div className="flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="text-xs font-medium text-foreground">
-             Subscribers
-            </span>
-           </div>
-           <span className="text-sm font-serif font-bold text-foreground">
-            {formatNumber(repository.subscribers_count)}
-           </span>
-          </div>
-         )}
         </div>
        </div>
 
@@ -760,7 +718,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
       </div>
      </div>
 
-     {repository.homepage && (
+     {/* {repository.homepage && (
       <div className="bg-background overflow-hidden border-y">
        <div className="p-4 border-b">
         <div className="flex items-center gap-1.5">
@@ -781,7 +739,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
         loading="lazy"
        />
       </div>
-     )}
+     )} */}
 
      {/* Related Repositories */}
      {relatedRepos.length > 0 && (
