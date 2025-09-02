@@ -3,6 +3,7 @@ import { JSDOM } from 'jsdom';
 import { db } from '@/db';
 import { repositoriesTable } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
+import { validateRepositoryPath } from '@/lib/utils';
 
 interface ScrapedRepository {
 	href: string;
@@ -46,11 +47,16 @@ export async function GET() {
 				const repoName = anchor?.textContent?.trim().replace(/\s+/g, ' ');
 
 				if (href) {
-					scrapedRepos.push({
-						href: href.replace(/^\//, ''),
-						url: `https://github.com${href}`,
-						name: repoName || 'N/A'
-					});
+					// Validate and clean repository path
+					const cleanHref = validateRepositoryPath(href);
+
+					if (cleanHref) {
+						scrapedRepos.push({
+							href: cleanHref,
+							url: `https://github.com/${cleanHref}`,
+							name: repoName || 'N/A'
+						});
+					}
 				}
 			}
 		});

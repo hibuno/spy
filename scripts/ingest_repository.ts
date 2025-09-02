@@ -135,9 +135,11 @@ class RepositoryFetcher {
 
 			if (!response.ok) {
 				if (response.status === 404) {
-					throw new Error(`Repository ${repositoryPath} not found on GitHub`);
+					throw new Error(`Repository ${repositoryPath} not found on GitHub (404)`);
 				} else if (response.status === 403) {
-					throw new Error('GitHub API rate limit exceeded. Consider adding a GITHUB_TOKEN to your .env file');
+					throw new Error('GitHub API rate limit exceeded (403). Consider adding a GITHUB_TOKEN to your .env file');
+				} else if (response.status === 422) {
+					throw new Error(`Repository ${repositoryPath} is invalid or blocked (422)`);
 				} else {
 					throw new Error(`GitHub API error: ${response.status} - ${response.statusText}`);
 				}
@@ -172,8 +174,13 @@ class RepositoryFetcher {
 				if (response.status === 404) {
 					console.log(`⚠️  No README found for ${repositoryPath}`);
 					return null;
+				} else if (response.status === 403) {
+					console.log(`⚠️  README access forbidden for ${repositoryPath} (rate limit or private repo)`);
+					return null;
+				} else {
+					console.log(`⚠️  README fetch failed for ${repositoryPath}: ${response.status} - ${response.statusText}`);
+					return null;
 				}
-				throw new Error(`GitHub API error: ${response.status} - ${response.statusText}`);
 			}
 
 			const readmeData: GitHubReadme = await response.json();
@@ -450,7 +457,7 @@ class RepositoryFetcher {
 					});
 				} catch (navError) {
 					// If navigation fails, try with load event
-					console.log(`Navigation failed with domcontentloaded, trying with load event...`);
+					console.log(`Navigation failed with domcontentloaded, trying with load event...`, navError);
 					await page.goto(url, {
 						waitUntil: 'load',
 						timeout: timeout
@@ -559,9 +566,13 @@ class RepositoryFetcher {
 			// Extract images from README if available
 			let readmeImages: ImageItem[] = [];
 			if (readmeContent) {
-				const repoUrl = `https://github.com/${repository.repository}`;
-				readmeImages = await this.extractImagesFromReadme(readmeContent, repoUrl);
-				console.log(`🖼️  Found ${readmeImages.length} images in README`);
+				try {
+					const repoUrl = `https://github.com/${repository.repository}`;
+					readmeImages = await this.extractImagesFromReadme(readmeContent, repoUrl);
+					console.log(`🖼️  Found ${readmeImages.length} images in README`);
+				} catch (imageError) {
+					console.log(`⚠️  Image extraction failed for ${repository.repository}, continuing without images`, imageError);
+				}
 			}
 
 			// Determine homepage URL
@@ -575,13 +586,17 @@ class RepositoryFetcher {
 			// Take screenshot of homepage if available
 			let screenshotUrl: string | null = null;
 			if (homepageUrl) {
-				const screenshot = await this.takeScreenshot(homepageUrl);
-				if (screenshot) {
-					const fileName = `images/${repository.repository.replace('/', '-')}-${Date.now()}.png`;
-					screenshotUrl = await this.uploadToSupabaseStorage(screenshot, fileName);
-					if (screenshotUrl) {
-						console.log(`✅ Screenshot uploaded: ${screenshotUrl}`);
+				try {
+					const screenshot = await this.takeScreenshot(homepageUrl);
+					if (screenshot) {
+						const fileName = `images/${repository.repository.replace('/', '-')}-${Date.now()}.png`;
+						screenshotUrl = await this.uploadToSupabaseStorage(screenshot, fileName);
+						if (screenshotUrl) {
+							console.log(`✅ Screenshot uploaded: ${screenshotUrl}`);
+						}
 					}
+				} catch (screenshotError) {
+					console.log(`⚠️  Screenshot failed for ${homepageUrl}, continuing without screenshot`, screenshotError);
 				}
 			}
 
@@ -653,9 +668,36 @@ class RepositoryFetcher {
 		} catch (error) {
 			console.error(`❌ Error processing repository ${repository.repository}:`, error);
 
-			// Try to update the repository with partial information if we have GitHub data
+			// Check if it's a GitHub API error that should mark as ingested
+			const isGitHubApiError = error instanceof Error && (
+				error.message.includes('not found on GitHub') ||
+				error.message.includes('GitHub API error') ||
+				error.message.includes('Repository') && error.message.includes('not found') ||
+				error.message.includes('404') ||
+				error.message.includes('403') ||
+				error.message.includes('422') ||
+				error.message.includes('rate limit exceeded') ||
+				error.message.includes('invalid or blocked') ||
+				error.message.includes('fetch failed') ||
+				error.message.includes('network') ||
+				error.message.includes('timeout')
+			);
+
 			try {
-				if (githubInfo) {
+				if (isGitHubApiError) {
+					// Mark as ingested even if GitHub API fails (404, rate limit, etc.)
+					console.log(`⚠️  Marking repository as ingested due to GitHub API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+					const updateQuery = `
+						UPDATE repositories
+						SET ingested = true
+						WHERE id = $1
+					`;
+
+					await this.dbClient.query(updateQuery, [repository.id]);
+					console.log(`✅ Marked repository as ingested despite error`);
+				} else if (githubInfo) {
+					// For other errors, try to update with partial information if we have GitHub data
 					const updateQuery = `
 						UPDATE repositories
 						SET
@@ -664,7 +706,8 @@ class RepositoryFetcher {
 							license = $3,
 							homepage = $4,
 							stars = $5,
-							forks = $6
+							forks = $6,
+							ingested = true
 						WHERE id = $7
 					`;
 
@@ -680,10 +723,20 @@ class RepositoryFetcher {
 						repository.id
 					]);
 
-					console.log(`📝 Updated repository with partial information due to error`);
+					console.log(`📝 Updated repository with partial information and marked as ingested`);
+				} else {
+					// If no GitHub data available, just mark as ingested
+					const updateQuery = `
+						UPDATE repositories
+						SET ingested = true
+						WHERE id = $1
+					`;
+
+					await this.dbClient.query(updateQuery, [repository.id]);
+					console.log(`✅ Marked repository as ingested (no GitHub data available)`);
 				}
 			} catch (updateError) {
-				console.error('❌ Error updating repository with partial data:', updateError);
+				console.error('❌ Error updating repository status:', updateError);
 			}
 
 			// Continue with next repository instead of exiting

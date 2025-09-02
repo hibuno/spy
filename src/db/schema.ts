@@ -32,6 +32,8 @@ export const repositoriesTable = pgTable('repositories', {
 	// README and publish columns
 	readme: text('readme'),
 	publish: boolean('publish').default(false),
+	ingested: boolean('ingested').default(false),
+	enriched: boolean('enriched').default(false),
 }, (table) => ({
 	repositoryIdx: index('repositories_repository_key').on(table.repository),
 	huggingfaceUrlIdx: index('idx_repositories_huggingface_url').on(table.huggingface_url),
@@ -41,13 +43,3 @@ export const repositoriesTable = pgTable('repositories', {
 
 export type InsertRepository = typeof repositoriesTable.$inferInsert;
 export type SelectRepository = typeof repositoriesTable.$inferSelect;
-
-export const bookmarksTable = pgTable('bookmarks', {
-	id: uuid('id').primaryKey().defaultRandom(),
-	user_id: uuid('user_id').notNull(),
-	repository_id: uuid('repository_id').notNull(),
-	created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
-export type InsertBookmark = typeof bookmarksTable.$inferInsert;
-export type SelectBookmark = typeof bookmarksTable.$inferSelect;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { JSDOM } from 'jsdom';
+import { validateRepositoryPath } from '@/lib/utils';
 
 interface ScrapedPaperDetail {
 	title: string;
@@ -188,12 +189,16 @@ export async function GET(request: Request) {
 			} else if (text.includes('project page') || text.includes('home page')) {
 				paperDetail.urls.projectPage = href;
 			} else if (href.includes('github.com') && text.includes('github')) {
-				paperDetail.urls.github = href;
+				// Clean and validate the GitHub repository path
+				const cleanRepoPath = validateRepositoryPath(href);
+				if (cleanRepoPath) {
+					paperDetail.urls.github = cleanRepoPath;
 
-				// Extract GitHub stars
-				const starsElement = link.querySelector('span');
-				if (starsElement) {
-					paperDetail.githubStars = parseInt(starsElement.textContent?.trim() || '0') || 0;
+					// Extract GitHub stars
+					const starsElement = link.querySelector('span');
+					if (starsElement) {
+						paperDetail.githubStars = parseInt(starsElement.textContent?.trim() || '0') || 0;
+					}
 				}
 			}
 		});

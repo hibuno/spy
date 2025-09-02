@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { repositoriesTable } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
+import { validateRepositoryPath } from '@/lib/utils';
 
 interface OSSInsightRepository {
 	repo_id: string;
@@ -38,11 +39,16 @@ export async function GET() {
 		repositories.sort((a, b) => parseInt(b.stars) - parseInt(a.stars));
 
 		repositories.filter(({ stars }) => parseInt(stars) > 50).forEach(repo => {
-			scrapedRepos.push({
-				href: repo.repo_name,
-				url: `https://github.com/${repo.repo_name}`,
-				name: repo.repo_name
-			});
+			// Validate and clean repository path
+			const cleanRepoName = validateRepositoryPath(repo.repo_name);
+
+			if (cleanRepoName) {
+				scrapedRepos.push({
+					href: cleanRepoName,
+					url: `https://github.com/${cleanRepoName}`,
+					name: cleanRepoName
+				});
+			}
 		});
 
 		// Check which repositories already exist in the database
