@@ -43,7 +43,7 @@ The project is composed of three main parts:
 
 ### Environment Setup
 
-1. Create a `.env.local` file in the root of the project.
+1. Create a `.env` file in the root of the project.
 2. Add the following environment variables. These are required for database connection and Supabase integration.
 
    ```env
@@ -120,12 +120,12 @@ This is the main table that stores all the information about the repositories.
 
 This table stores the bookmarks that users have created.
 
-| Column          | Type        | Description                                          |
-| --------------- | ----------- | ---------------------------------------------------- |
-| `id`            | `uuid`      | Primary key for the table.                           |
-| `user_id`       | `uuid`      | Foreign key to the `auth.users` table.               |
-| `repository_id` | `uuid`      | Foreign key to the `repositories` table.             |
-| `created_at`    | `timestamp` | The timestamp when the bookmark was created.         |
+| Column          | Type        | Description                                  |
+| --------------- | ----------- | -------------------------------------------- |
+| `id`            | `uuid`      | Primary key for the table.                   |
+| `user_id`       | `uuid`      | Foreign key to the `auth.users` table.       |
+| `repository_id` | `uuid`      | Foreign key to the `repositories` table.     |
+| `created_at`    | `timestamp` | The timestamp when the bookmark was created. |
 
 ### Migrations
 

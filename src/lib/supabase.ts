@@ -6,7 +6,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '-'
 
 if (!supabaseUrl || !supabaseKey) {
-	throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
+	throw new Error('Missing Supabase environment variables. Please check your .env file.')
 }
 
 // Client for browser/client-side operations
