@@ -22,6 +22,7 @@ export function Header() {
       alt="The Spy Project"
       width={50}
       height={50}
+      unoptimized={true}
      />
      <div>
       <h1 className="text-md font-serif font-bold text-foreground">
@@ -44,6 +45,7 @@ export function Header() {
       style={{ width: "190px", height: "36px" }}
       width="250"
       height="54"
+      unoptimized={true}
      />
     </a>
     <Link href="/bookmarks">

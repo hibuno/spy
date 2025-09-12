@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, GitFork, Image as ImageIcon, Bookmark } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import Image from "next/image";
+import SmartImage from "@/components/smart-image";
 import { cn } from "@/lib/utils";
 import { bookmarkStore, useBookmarks } from "@/lib/bookmarks-store";
 
@@ -115,14 +115,17 @@ export function RepositoryCard({ repository, className }: RepositoryCardProps) {
   >
    <div className="repo-card">
     {/* Preview Image */}
-    <div className="relative h-64 bg-muted overflow-hidden">
+    <div className="relative h-64 bg-foreground overflow-hidden  flex items-center justify-center">
      {hasImages ? (
       images[currentImageIndex].url !== "" && (
-       <Image
+       <SmartImage
         src={images[currentImageIndex].url}
         alt={images[currentImageIndex].url}
-        fill
-        className="object-cover bg-foreground"
+        className="bg-foreground"
+        quality={75}
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 384px"
+        aspectRatio="auto"
+        maxHeight={256}
         onError={() => {
          setImageError(true);
          setCurrentImageIndex(
