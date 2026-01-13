@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import * as cheerio from "cheerio";
 import { db } from "@/db";
 import { repositoriesTable } from "@/db/schema";
 import { inArray } from "drizzle-orm";
@@ -41,62 +41,61 @@ export async function fetchPaperRepositories(): Promise<PaperRepository[]> {
 
   const html = await response.text();
 
-  // Parse HTML with jsdom
-  const dom = new JSDOM(html);
-  const document = dom.window.document;
+  // Parse HTML with cheerio
+  const $ = cheerio.load(html);
 
   // Select all article elements in the papers section
-  const articleElements = document.querySelectorAll("main section article");
+  const articleElements = $("main section article");
 
   const papers: PaperRepository[] = [];
 
   // First, collect all paper data
   const scrapedPapers: Array<Omit<PaperRepository, "existsInDB">> = [];
 
-  articleElements.forEach((article) => {
+  articleElements.each((_, article) => {
     try {
+      const $article = $(article);
+
       // Get the main paper link and href
-      const mainLink = article.querySelector('a[href*="/papers/"]');
-      const href = mainLink?.getAttribute("href") || "";
+      const mainLink = $article.find('a[href*="/papers/"]');
+      const href = mainLink.attr("href") || "";
 
       if (!href) return; // Skip if no valid href found
 
       // Extract thumbnail
-      const thumbnailImg = article.querySelector(
-        'img[src*="social-thumbnails"]'
-      );
-      const thumbnail = thumbnailImg?.getAttribute("src") || "";
+      const thumbnailImg = $article.find('img[src*="social-thumbnails"]');
+      const thumbnail = thumbnailImg.attr("src") || "";
 
       // Extract title
-      const titleElement = article.querySelector("h3 a");
-      const title = titleElement?.textContent?.trim() || "N/A";
+      const titleElement = $article.find("h3 a");
+      const title = titleElement.text()?.trim() || "N/A";
 
       // Extract upvotes
-      const upvoteElement = article.querySelector(
+      const upvoteElement = $article.find(
         ".flex.items-center.flex-col .leading-none"
       );
-      const upvotes = parseInt(upvoteElement?.textContent?.trim() || "0") || 0;
+      const upvotes = parseInt(upvoteElement.text()?.trim() || "0") || 0;
 
       // Extract submitted by information
       let submittedBy = "N/A";
 
       // Look for "Submitted by" text
-      const submittedByContainer = Array.from(
-        article.querySelectorAll("*")
-      ).find((el) => el.textContent?.includes("Submitted by"));
-      if (submittedByContainer) {
-        const submittedByText = submittedByContainer.textContent || "";
+      const submittedByContainer = $article
+        .find("*")
+        .filter((_, el) => $(el).text().includes("Submitted by"));
+      if (submittedByContainer.length > 0) {
+        const submittedByText = submittedByContainer.first().text() || "";
         const match = submittedByText.match(/Submitted by\s+(\w+)/);
         submittedBy = match ? match[1] : "N/A";
       }
 
       // Extract authors from the avatar list
-      const authorAvatars = article.querySelectorAll("ul li[title]");
+      const authorAvatars = $article.find("ul li[title]");
       const authors: string[] = [];
       let authorCount = 0;
 
-      authorAvatars.forEach((avatar) => {
-        const authorName = avatar.getAttribute("title");
+      authorAvatars.each((_, avatar) => {
+        const authorName = $(avatar).attr("title");
         if (authorName) {
           authors.push(authorName);
         }
@@ -104,9 +103,11 @@ export async function fetchPaperRepositories(): Promise<PaperRepository[]> {
 
       // Check for "X authors" text
       const authorCountText =
-        Array.from(article.querySelectorAll("*")).find((el) =>
-          el.textContent?.includes("authors")
-        )?.textContent || "";
+        $article
+          .find("*")
+          .filter((_, el) => $(el).text().includes("authors"))
+          .first()
+          .text() || "";
 
       const authorCountMatch = authorCountText.match(/(\d+)\s+authors/);
       authorCount = authorCountMatch
@@ -114,27 +115,26 @@ export async function fetchPaperRepositories(): Promise<PaperRepository[]> {
         : authors.length;
 
       // Extract GitHub count (first metric)
-      const metricElements = article.querySelectorAll(
+      const metricElements = $article.find(
         ".flex.items-center.gap-2 a span, .flex.items-center.gap-2 span"
       );
       let githubCount = 0;
       let commentCount = 0;
 
       if (metricElements.length >= 1) {
-        githubCount =
-          parseInt(metricElements[0]?.textContent?.trim() || "0") || 0;
+        githubCount = parseInt($(metricElements[0]).text()?.trim() || "0") || 0;
       }
 
       // Extract comment count (look for the blue-colored element which typically indicates comments)
-      const commentElement = article.querySelector(
+      const commentElement = $article.find(
         '[class*="text-blue-500"], [class*="bg-blue-600"]'
       );
-      if (commentElement) {
-        const commentText = commentElement.textContent?.trim() || "0";
+      if (commentElement.length > 0) {
+        const commentText = commentElement.first().text()?.trim() || "0";
         commentCount = parseInt(commentText) || 0;
       } else if (metricElements.length >= 2) {
         commentCount =
-          parseInt(metricElements[1]?.textContent?.trim() || "0") || 0;
+          parseInt($(metricElements[1]).text()?.trim() || "0") || 0;
       }
 
       scrapedPapers.push({

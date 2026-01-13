@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import * as cheerio from "cheerio";
 import { db } from "@/db";
 import { repositoriesTable } from "@/db/schema";
 import { inArray } from "drizzle-orm";
@@ -28,24 +28,23 @@ export async function fetchTrendingRepositories(): Promise<
 
   const html = await response.text();
 
-  // Parse HTML with jsdom
-  const dom = new JSDOM(html);
-  const document = dom.window.document;
+  // Parse HTML with cheerio
+  const $ = cheerio.load(html);
 
   // Select h2 elements with class "h3 lh-condensed"
-  const h2Elements = document.querySelectorAll("h2.h3.lh-condensed");
+  const h2Elements = $("h2.h3.lh-condensed");
 
   const repositories: TrendingRepository[] = [];
 
   // First, collect all repository hrefs
   const scrapedRepos: Array<{ href: string; url: string; name: string }> = [];
 
-  h2Elements.forEach((h2) => {
+  h2Elements.each((_, h2) => {
     // Find the anchor tag within the h2
-    const anchor = h2.querySelector("a[href]");
-    if (anchor) {
-      const href = anchor.getAttribute("href");
-      const repoName = anchor?.textContent?.trim().replace(/\s+/g, " ");
+    const anchor = $(h2).find("a[href]");
+    if (anchor.length > 0) {
+      const href = anchor.attr("href");
+      const repoName = anchor.text()?.trim().replace(/\s+/g, " ");
 
       if (href) {
         // Validate and clean repository path

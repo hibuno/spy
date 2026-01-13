@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { JSDOM } from "jsdom";
+import * as cheerio from "cheerio";
 import { validateRepositoryPath } from "@/lib/utils";
 import { withApiMiddleware, middlewareConfigs } from "@/lib/api-middleware";
 
@@ -70,8 +70,7 @@ async function paperDetailHandler(request: NextRequest) {
     }
 
     const html = await response.text();
-    const dom = new JSDOM(html);
-    const document = dom.window.document;
+    const $ = cheerio.load(html);
 
     const paperDetail: ScrapedPaperDetail = {
       title: "",
@@ -85,26 +84,29 @@ async function paperDetailHandler(request: NextRequest) {
     };
 
     // Extract title
-    const titleElement = document.querySelector("h1");
+    const titleElement = $("h1");
     // Clean up title
-    paperDetail.title = (titleElement?.textContent?.trim() || "N/A").replace(
+    paperDetail.title = (titleElement.text()?.trim() || "N/A").replace(
       /\s+/g,
       " "
     );
 
     // Extract ArXiv ID
-    const arxivElement = Array.from(document.querySelectorAll("*")).find((el) =>
-      el.textContent?.includes("arxiv:")
+    const arxivElement = $("*").filter((_, el) =>
+      $(el).text().includes("arxiv:")
     );
-    if (arxivElement) {
-      const arxivMatch = arxivElement.textContent?.match(/arxiv:(\d+\.\d+)/);
+    if (arxivElement.length > 0) {
+      const arxivMatch = arxivElement
+        .first()
+        .text()
+        ?.match(/arxiv:(\d+\.\d+)/);
       paperDetail.arxivId = arxivMatch ? arxivMatch[1] : "";
     }
 
     // Extract publish and submitted dates
-    const dateElements = document.querySelectorAll(".mb-6, .text-gray-500");
-    dateElements.forEach((element) => {
-      const text = element.textContent?.trim().replace(/\s+/g, " ") || "";
+    const dateElements = $(".mb-6, .text-gray-500");
+    dateElements.each((_, element) => {
+      const text = $(element).text()?.trim().replace(/\s+/g, " ") || "";
 
       // Extract publish date
       const publishMatch = text.match(/publish on\s+([A-Za-z]+\s+\d+)/);
@@ -120,34 +122,33 @@ async function paperDetailHandler(request: NextRequest) {
     });
 
     // Extract "Paper of the day" badge
-    const paperOfDayElement = Array.from(
-      document.querySelectorAll(".text-blue-500")
-    ).find((el) => el.textContent?.includes("Paper of the day"));
-    if (paperOfDayElement) {
-      paperDetail.paperOfTheDay = paperOfDayElement.textContent?.trim();
+    const paperOfDayElement = $(".text-blue-500").filter((_, el) =>
+      $(el).text().includes("Paper of the day")
+    );
+    if (paperOfDayElement.length > 0) {
+      paperDetail.paperOfTheDay = paperOfDayElement.first().text()?.trim();
     }
 
     // Extract upvotes
-    const upvoteElement =
-      document.querySelector(".font-semibold.text-orange-500") ||
-      document.querySelector(".text-orange-500");
-    if (upvoteElement) {
-      paperDetail.upvotes =
-        parseInt(upvoteElement.textContent?.trim() || "0") || 0;
+    const upvoteElement = $(
+      ".font-semibold.text-orange-500, .text-orange-500"
+    ).first();
+    if (upvoteElement.length > 0) {
+      paperDetail.upvotes = parseInt(upvoteElement.text()?.trim() || "0") || 0;
     }
 
     // Extract authors
-    const authorElements = document.querySelectorAll(".author, span.author");
-    authorElements.forEach((authorEl) => {
-      const nameElement =
-        authorEl.querySelector("a") || authorEl.querySelector("button");
-      const avatarElement = authorEl.querySelector("img");
+    const authorElements = $(".author, span.author");
+    authorElements.each((_, authorEl) => {
+      const $authorEl = $(authorEl);
+      const nameElement = $authorEl.find("a, button").first();
+      const avatarElement = $authorEl.find("img").first();
 
-      if (nameElement) {
+      if (nameElement.length > 0) {
         const author = {
-          name: nameElement.textContent?.trim() || "N/A",
-          profileUrl: nameElement.getAttribute("href") || undefined,
-          avatarUrl: avatarElement?.getAttribute("src") || undefined,
+          name: nameElement.text()?.trim() || "N/A",
+          profileUrl: nameElement.attr("href") || undefined,
+          avatarUrl: avatarElement.attr("src") || undefined,
         };
         paperDetail.authors.push(author);
       }
@@ -155,58 +156,60 @@ async function paperDetailHandler(request: NextRequest) {
 
     // If no authors found with .author class, try alternative approach
     if (paperDetail.authors.length === 0) {
-      const authorsSection = Array.from(document.querySelectorAll("*")).find(
-        (el) => el.textContent?.includes("Authors:")
+      const authorsSection = $("*").filter((_, el) =>
+        $(el).text().includes("Authors:")
       );
 
-      if (authorsSection) {
-        const authorLinks =
-          authorsSection.parentElement?.querySelectorAll('a[href*="/"]') || [];
-        authorLinks.forEach((link) => {
-          const img = link.querySelector("img");
+      if (authorsSection.length > 0) {
+        const authorLinks = authorsSection
+          .first()
+          .parent()
+          .find('a[href*="/"]');
+        authorLinks.each((_, link) => {
+          const $link = $(link);
+          const img = $link.find("img");
           paperDetail.authors.push({
-            name: link.textContent?.trim() || "N/A",
-            profileUrl: link.getAttribute("href") || undefined,
-            avatarUrl: img?.getAttribute("src") || undefined,
+            name: $link.text()?.trim() || "N/A",
+            profileUrl: $link.attr("href") || undefined,
+            avatarUrl: img.attr("src") || undefined,
           });
         });
       }
     }
 
     // Extract abstract and AI summary
-    const abstractSection = Array.from(document.querySelectorAll("h2")).find(
-      (h2) => h2.textContent?.includes("Abstract")
+    const abstractSection = $("h2").filter((_, h2) =>
+      $(h2).text().includes("Abstract")
     );
 
-    if (abstractSection) {
-      const abstractContainer = abstractSection.parentElement;
+    if (abstractSection.length > 0) {
+      const abstractContainer = abstractSection.first().parent();
 
       // Extract AI summary (blue box)
-      const aiSummaryElement = abstractContainer?.querySelector(
+      const aiSummaryElement = abstractContainer.find(
         '[class*="bg-blue-"], [class*="border-blue-"]'
       );
-      if (aiSummaryElement) {
-        const summaryText = aiSummaryElement.querySelector("p");
-        paperDetail.aiSummary = summaryText?.textContent
-          ?.trim()
-          .replace(/\s+/g, " ");
+      if (aiSummaryElement.length > 0) {
+        const summaryText = aiSummaryElement.find("p");
+        paperDetail.aiSummary = summaryText.text()?.trim().replace(/\s+/g, " ");
       }
 
       // Extract main abstract (gray text paragraph)
-      const abstractElement = abstractContainer?.querySelector(
+      const abstractElement = abstractContainer.find(
         ".text-gray-600, p.text-gray-600"
       );
-      if (abstractElement) {
+      if (abstractElement.length > 0) {
         paperDetail.abstract =
-          abstractElement.textContent?.trim().replace(/\s+/g, " ") || "N/A";
+          abstractElement.text()?.trim().replace(/\s+/g, " ") || "N/A";
       }
     }
 
     // Extract URLs from buttons/links
-    const linkElements = document.querySelectorAll("a[href]");
-    linkElements.forEach((link) => {
-      const href = link.getAttribute("href") || "";
-      const text = link.textContent?.toLowerCase() || "";
+    const linkElements = $("a[href]");
+    linkElements.each((_, link) => {
+      const $link = $(link);
+      const href = $link.attr("href") || "";
+      const text = $link.text()?.toLowerCase() || "";
 
       if (href.includes("arxiv.org/abs/")) {
         paperDetail.urls.arxiv = href;
@@ -221,10 +224,10 @@ async function paperDetailHandler(request: NextRequest) {
           paperDetail.urls.github = cleanRepoPath;
 
           // Extract GitHub stars
-          const starsElement = link.querySelector("span");
-          if (starsElement) {
+          const starsElement = $link.find("span");
+          if (starsElement.length > 0) {
             paperDetail.githubStars =
-              parseInt(starsElement.textContent?.trim() || "0") || 0;
+              parseInt(starsElement.text()?.trim() || "0") || 0;
           }
         }
       }
