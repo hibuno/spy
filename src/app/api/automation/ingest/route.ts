@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { RepositoryFetcher } from "../../../../../scripts/ingest_repository";
 import { withApiMiddleware, middlewareConfigs } from "@/lib/api-middleware";
 import { fetchOSSInsightRepositories } from "@/services/ossinsight-service";
 import { fetchPaperRepositories } from "@/services/paper-service";
 import { fetchTrendingRepositories } from "@/services/trending-service";
+import { db } from "@/db";
+import { repositoriesTable } from "@/db/schema";
 
 async function ingestHandler(_request: NextRequest) {
   try {
     console.log("🚀 Starting automated repository ingestion...");
-
-    const fetcher = new RepositoryFetcher();
-
-    // Connect to database
-    await fetcher.connect();
 
     let totalNewRepos = 0;
     let addedCount = 0;
@@ -110,9 +106,9 @@ async function ingestHandler(_request: NextRequest) {
           experience: null,
           usability: null,
           deployment: null,
-          stars: BigInt(parseInt(repo.stars) || 0),
-          forks: BigInt(parseInt(repo.forks) || 0),
-          watching: BigInt(0),
+          stars: parseInt(repo.stars) || 0,
+          forks: parseInt(repo.forks) || 0,
+          watching: 0,
           license: null,
           homepage: repo.url || null,
           images: JSON.stringify([]),
@@ -120,9 +116,9 @@ async function ingestHandler(_request: NextRequest) {
           updated_at: new Date(),
           archived: false,
           disabled: false,
-          open_issues: BigInt(0),
+          open_issues: 0,
           default_branch: "main",
-          network_count: BigInt(0),
+          network_count: 0,
           tags: null,
           arxiv_url: null,
           huggingface_url: null, // Use null instead of empty string to avoid unique constraint violations
@@ -135,57 +131,19 @@ async function ingestHandler(_request: NextRequest) {
           enriched: false, // Mark as not enriched so enrich endpoint can handle it
         };
 
-        // Insert directly into database
-        const insertQuery = `
-          INSERT INTO repositories (
-            id, repository, summary, content, languages, experience, usability, deployment,
-            stars, forks, watching, license, homepage, images, created_at, updated_at,
-            archived, disabled, open_issues, default_branch, network_count, tags,
-            arxiv_url, huggingface_url, paper_authors, paper_abstract, paper_scraped_at,
-            readme, publish, ingested, enriched
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-            $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
-          ) ON CONFLICT (repository) DO NOTHING
-        `;
-
-        const result = await (fetcher as any).dbClient.query(insertQuery, [
-          repoRecord.id,
-          repoRecord.repository,
-          repoRecord.summary,
-          repoRecord.content,
-          repoRecord.languages,
-          repoRecord.experience,
-          repoRecord.usability,
-          repoRecord.deployment,
-          repoRecord.stars,
-          repoRecord.forks,
-          repoRecord.watching,
-          repoRecord.license,
-          repoRecord.homepage,
-          repoRecord.images,
-          repoRecord.created_at,
-          repoRecord.updated_at,
-          repoRecord.archived,
-          repoRecord.disabled,
-          repoRecord.open_issues,
-          repoRecord.default_branch,
-          repoRecord.network_count,
-          repoRecord.tags,
-          repoRecord.arxiv_url,
-          repoRecord.huggingface_url,
-          repoRecord.paper_authors,
-          repoRecord.paper_abstract,
-          repoRecord.paper_scraped_at,
-          repoRecord.readme,
-          repoRecord.publish,
-          repoRecord.ingested,
-          repoRecord.enriched,
-        ]);
-
-        // Only count as added if a row was actually inserted
-        if (result.rowCount && result.rowCount > 0) {
+        // Insert directly into database using Drizzle ORM
+        try {
+          await db
+            .insert(repositoriesTable)
+            .values(repoRecord)
+            .onConflictDoNothing();
           addedCount++;
+        } catch (insertError) {
+          // If insert fails due to conflict or other issues, don't count it
+          console.warn(
+            `Insert skipped for ${repo.name || repo.href}:`,
+            insertError
+          );
         }
 
         // Small delay between database inserts
@@ -202,8 +160,6 @@ async function ingestHandler(_request: NextRequest) {
         continue;
       }
     }
-
-    await fetcher.disconnect();
 
     const result = {
       success: true,
