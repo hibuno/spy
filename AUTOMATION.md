@@ -49,12 +49,15 @@ Base URL: `https://yourdomain.com/api/automation/`
 - **Purpose**: Fetch NEW repositories from external sources (OSS Insight, Papers, Trending)
 - **Headers**: `X-API-Key: your-api-key`
 - **Schedule**: Every 1 hour
+- **Limit**: Maximum 20 repositories per hour
 - **Process**:
   1. Calls `/api/ossinsight` to get trending repos
   2. Calls `/api/paper` to get research paper repos
   3. Calls `/api/trending` to get GitHub trending repos
-  4. Adds new repositories to database
-  5. Processes basic metadata (README, images)
+  4. Limits to 20 repositories total (prevents overload)
+  5. Adds basic repository records to database
+  6. Marks as `ingested: false` and `enriched: false` for later processing
+  7. **Does NOT do full processing** - just adds to database
 
 ### 4. Repository Processing
 
@@ -62,8 +65,9 @@ Base URL: `https://yourdomain.com/api/automation/`
 - **Purpose**: Process existing repositories that need image/metadata updates
 - **Headers**: `X-API-Key: your-api-key`
 - **Schedule**: As needed (can be triggered manually or scheduled)
+- **Process**: Handles repositories with `ingested: false`
 
-### 5. Repository Enrichment
+### 5. Repository Enrichment (SMART)
 
 - **Endpoint**: `POST /api/automation/enrich`
 - **Purpose**: Enrich repositories with AI-generated content
@@ -73,6 +77,28 @@ Base URL: `https://yourdomain.com/api/automation/`
   1. Finds repositories that are ingested but not enriched
   2. Generates AI summaries and descriptions
   3. Adds experience levels, tags, and usability ratings
+  4. Handles repositories added by the ingest endpoint
+
+## Optimized Workflow
+
+```
+External Sources (unlimited)
+         ↓
+   Ingest (20/hour) → Database (basic records)
+         ↓
+   Process (as needed) → Full metadata
+         ↓
+   Enrich (every 5min) → AI content
+         ↓
+   Published repositories
+```
+
+**Benefits**:
+
+- ✅ **Rate limiting**: Only 20 new repos per hour prevents overload
+- ✅ **Separation**: Ingest just adds to DB, processing happens separately
+- ✅ **Efficiency**: Enrich endpoint handles all new repos every 5 minutes
+- ✅ **Scalability**: Can handle large numbers of discovered repos without timeout
 
 ## n8n Workflow Configurations
 
