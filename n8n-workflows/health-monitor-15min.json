@@ -1,0 +1,142 @@
+{
+  "name": "Health Monitor - 15min",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://yourdomain.com/api/automation/health",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{$credentials.apiKey}}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "2",
+      "name": "Health Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "spy-api-key",
+          "name": "Spy API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.status}}",
+              "value2": "healthy"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Is Healthy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "message": "🚨 SYSTEM HEALTH ALERT!\n\n⚠️ Status: {{$json.status}}\n❌ Error: {{$json.error}}\n\n🔧 Service Status:\n- Database: {{$json.services.database.status}}\n- GitHub: {{$json.services.github.status}}\n- OpenAI: {{$json.services.openai.status}}\n\n📋 Missing Environment Variables:\n{{$json.environment.missingEnvVars}}\n\n🕐 Timestamp: {{$json.timestamp}}\n\nPlease check the system immediately!"
+      },
+      "id": "4",
+      "name": "Health Alert",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "message": "✅ System health check passed\n\n📊 Status: {{$json.status}}\n🗄️ Database: {{$json.services.database.totalRepositories}} repositories\n🔑 GitHub Token: {{$json.services.github.hasToken ? 'Configured' : 'Missing'}}\n🤖 OpenAI: {{$json.services.openai.model}} via {{$json.services.openai.apiUrl}}\n\n🕐 {{$json.timestamp}}"
+      },
+      "id": "5",
+      "name": "Health OK Log",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [900, 200]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Health Check": {
+      "main": [
+        [
+          {
+            "node": "Is Healthy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Healthy?": {
+      "main": [
+        [
+          {
+            "node": "Health OK Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Health Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2024-01-13T00:00:00.000Z",
+  "updatedAt": "2024-01-13T00:00:00.000Z",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "1"
+}

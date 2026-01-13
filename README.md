@@ -47,6 +47,9 @@ The project is composed of three main parts:
 2. Add the following environment variables. These are required for database connection and Supabase integration.
 
    ```env
+   # Required: Your app's domain for CORS validation
+   NEXT_PUBLIC_APP_URL=https://yourdomain.com
+
    # Supabase credentials from your project's dashboard
    NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
@@ -54,6 +57,14 @@ The project is composed of three main parts:
 
    # Direct connection string to your PostgreSQL database
    DATABASE_URL="postgresql://user:password@host:port/db"
+
+   # Optional: API key for scraping endpoints
+   API_SECRET_KEY=your-secret-api-key-here
+
+   # AI Content Generation (optional)
+   OPENAI_API_KEY=your-openai-api-key
+   OPENAI_API_URL=https://api.openai.com/v1/chat/completions  # Optional: Custom endpoint
+   OPENAI_API_MODEL=gpt-4.1-nano  # Optional: Custom model
    ```
 
 ### Installation
@@ -75,6 +86,49 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## 4.1. Security Features
+
+This application implements comprehensive security measures to protect API endpoints:
+
+### Domain Validation & CORS Protection
+
+- Requests must originate from the configured `NEXT_PUBLIC_APP_URL` domain
+- Automatic subdomain support (e.g., `api.yourdomain.com`)
+- Development mode allows `localhost` and `127.0.0.1`
+
+### Rate Limiting
+
+- **General endpoints**: 100 requests per minute per IP
+- **Search endpoints**: 30 requests per minute per IP
+- **Scraping endpoints**: 10 requests per minute per IP
+- **Stats endpoint**: 60 requests per minute per IP
+
+### API Key Protection
+
+Scraping endpoints (`/api/paper`, `/api/trending`, `/api/ossinsight`) can be protected with an API key:
+
+- Set `API_SECRET_KEY` in environment variables
+- Include key in requests: `X-API-Key: your-secret-api-key-here`
+
+### Security Headers
+
+All API responses include standard security headers:
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+
+### Testing Security
+
+Run the security test suite to verify protection:
+
+```bash
+bun run test:security
+```
+
+For detailed security documentation, see [SECURITY.md](./SECURITY.md).
 
 ## 5. Database
 
@@ -138,49 +192,59 @@ Database migrations are managed using `drizzle-kit`. The following scripts are a
 
 ## 6. Automation (n8n)
 
-The project uses n8n to automate data ingestion and maintenance. There are four main workflows:
+The project uses n8n to automate data ingestion and maintenance. There are three main workflows:
 
-### 1. Spy Daily Ingest (GitHub)
+### API Endpoints for Automation
 
-This workflow runs on a schedule to ingest new repositories from GitHub.
+All automation endpoints require API key authentication (`X-API-Key` header):
 
-- **Trigger:** Runs on a schedule.
-- **Process:**
-  1. Scrapes a trending page to get a list of repositories.
-  2. Filters out repositories that are already in the database.
-  3. For each new repository, it fetches the README content from the GitHub API.
-  4. An AI model (via OpenRouter) extracts key information from the README.
-  5. The new repository data is inserted or updated in the database.
+- **`POST /api/automation/ingest`** - Process repositories that need ingestion
+- **`POST /api/automation/enrich`** - Enrich repositories with AI-generated content
+- **`GET /api/automation/status`** - Get current automation statistics
+- **`GET /api/automation/health`** - Check system health and configuration
 
-### 2. Spy Daily Ingest (Hugging Face)
+### n8n Workflows
 
-This workflow is similar to the GitHub ingest but for Hugging Face.
+#### 1. Repository Ingestion (Hourly)
 
-- **Trigger:** Runs on a schedule.
-- **Process:**
-  1. Uses an internal paper scraper to get a list of papers.
-  2. Makes HTTP requests to get more details.
-  3. The new data is inserted or updated in the database.
+- **Schedule**: Every 1 hour
+- **Purpose**: Process new repositories from GitHub API
+- **Process**: Fetches repository data, README content, screenshots, and metadata
+- **Rate Limiting**: 3-second delays between repositories (GitHub API limits)
 
-### 3. Spy Stats Updater
+#### 2. Repository Enrichment (Every 5 minutes)
 
-This workflow keeps the repository statistics up-to-date.
+- **Schedule**: Every 5 minutes (smart - only runs if needed)
+- **Purpose**: Generate AI summaries and content for repositories
+- **Process**: Uses OpenAI/Upstage API to create human-readable content
+- **Rate Limiting**: 3-second delays between API calls
 
-- **Trigger:** Runs on a schedule.
-- **Process:**
-  1. Selects a batch of repositories from the database.
-  2. Calls the GitHub API to get the latest stats (stars, forks, etc.).
-  3. Updates the database with the new stats.
+#### 3. Health Monitoring (Every 15 minutes)
 
-### 4. Spy Auto Publish
+- **Schedule**: Every 15 minutes
+- **Purpose**: Monitor system health and alert on issues
+- **Checks**: Database connectivity, API keys, environment variables
 
-This workflow automatically publishes repositories that meet certain criteria.
+### Setup Instructions
 
-- **Trigger:** Runs on a schedule.
-- **Process:**
-  1. Selects repositories that are not yet published.
-  2. Checks if they meet the criteria for publishing (e.g., have a summary, content, etc.).
-  3. Updates the `publish` flag to `true` for the selected repositories.
+1. **Configure API Key**: Set `API_SECRET_KEY` in environment variables
+2. **Import Workflows**: Use the JSON files in `n8n-workflows/` directory
+3. **Update URLs**: Replace `https://yourdomain.com` with your actual domain
+4. **Set Credentials**: Create "Spy API Key" credential in n8n with your API key
+5. **Activate Workflows**: Enable each workflow in n8n
+
+For detailed setup instructions, see [AUTOMATION.md](./AUTOMATION.md).
+
+### Testing Automation
+
+```bash
+# Test all automation endpoints
+bun run test:automation
+
+# Test individual scripts
+bun run ingest    # Run ingestion manually
+bun run enrich    # Run enrichment manually
+```
 
 ## 7. Available Scripts
 
@@ -188,6 +252,10 @@ This workflow automatically publishes repositories that meet certain criteria.
 - **`build`**: Builds the application for production.
 - **`start`**: Starts the production server.
 - **`lint`**: Lints the codebase using ESLint.
+- **`test:security`**: Runs security tests to verify API protection.
+- **`test:automation`**: Tests automation API endpoints.
+- **`ingest`**: Runs the repository ingestion script manually.
+- **`enrich`**: Runs the repository content enrichment script with AI.
 
 ## 8. Contributing
 
