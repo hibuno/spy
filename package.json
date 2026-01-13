@@ -12,8 +12,7 @@
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
 		"enrich": "bun run scripts/enrich_repository.ts",
-		"ingest": "bun run scripts/ingest_repository.ts",
-		"test:automation": "bun run scripts/test-automation.ts"
+		"ingest": "bun run scripts/ingest_repository.ts"
 	},
 	"dependencies": {
 		"@databuddy/sdk": "^2.3.24",

@@ -27,8 +27,6 @@ The project is composed of three main parts:
 2. **Backend & Database:** A PostgreSQL database managed by Supabase, with a schema defined and managed by Drizzle ORM.
 3. **Automation:** A set of n8n workflows that handle data ingestion, processing, and maintenance.
 
-![System Architecture Diagram](https://i.imgur.com/3Z2k2Yy.png)
-
 - **Frontend:** The Next.js application is responsible for rendering the user interface. It uses a combination of server-side rendering (SSR) for fast initial page loads and client-side rendering (CSR) for dynamic interactions like filtering and infinite scrolling.
 - **Backend & Database:** The PostgreSQL database, hosted on Supabase, is the single source of truth for all project data. Drizzle ORM is used to provide a type-safe way to interact with the database.
 - **Automation (n8n):** The n8n workflows are the backbone of the project, responsible for populating and maintaining the database. They run on a schedule to fetch data from external APIs, process it, and store it in the database.
@@ -44,27 +42,47 @@ The project is composed of three main parts:
 ### Environment Setup
 
 1. Create a `.env` file in the root of the project.
-2. Add the following environment variables. These are required for database connection and Supabase integration.
+2. Add the following environment variables. These are required for database connection, Supabase integration, and optional features like analytics and email notifications.
 
    ```env
-   # Required: Your app's domain for CORS validation
+   # Required: Your app's domain for CORS validation (e.g., https://yourdomain.com)
    NEXT_PUBLIC_APP_URL=https://yourdomain.com
+
+   # Optional: Databuddy analytics key
+   NEXT_PUBLIC_DATABUDDY_KEY=your-databuddy-key
+
+   # Environment setting
+   NODE_ENV=production
 
    # Supabase credentials from your project's dashboard
    NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
    SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 
-   # Direct connection string to your PostgreSQL database
+   # Database connection details
    DATABASE_URL="postgresql://user:password@host:port/db"
+   SUPABASE_DATABASE_HOST=your-db-host
+   SUPABASE_DATABASE_NAME=your-db-name
+   SUPABASE_DATABASE_USER=your-db-user
+   SUPABASE_DATABASE_PASSWORD=your-db-password
+   SUPABASE_DATABASE_PORT=5432
 
-   # Optional: API key for scraping endpoints
+   # GitHub API token for repository data fetching
+   GITHUB_TOKEN=your-github-token
+
+   # API key for scraping endpoints (generate with: openssl rand -base64 32)
    API_SECRET_KEY=your-secret-api-key-here
 
-   # AI Content Generation (optional)
+   # AI Content Generation (you can use upstage.ai for free credits)
    OPENAI_API_KEY=your-openai-api-key
    OPENAI_API_URL=https://api.openai.com/v1/chat/completions  # Optional: Custom endpoint
    OPENAI_API_MODEL=gpt-4.1-nano  # Optional: Custom model
+
+   # Email notifications for health monitoring (optional)
+   MAILTRAP_USER=your-mailtrap-user
+   MAILTRAP_PASSWORD=your-mailtrap-password
+   MAILTRAP_HOST=your-mailtrap-host
+   MAILTRAP_PORT=587
    ```
 
 ### Installation
@@ -121,12 +139,6 @@ All API responses include standard security headers:
 - `Referrer-Policy: strict-origin-when-cross-origin`
 
 ### Testing Security
-
-Run the security test suite to verify protection:
-
-```bash
-bun run test:security
-```
 
 For detailed security documentation, see [SECURITY.md](./SECURITY.md).
 
@@ -224,6 +236,15 @@ All automation endpoints require API key authentication (`X-API-Key` header):
 - **Schedule**: Every 15 minutes
 - **Purpose**: Monitor system health and alert on issues
 - **Checks**: Database connectivity, API keys, environment variables
+- **Notifications**: Automatic email alerts via Mailtrap when system is unhealthy
+
+### Email Notifications
+
+The health monitoring system can send email notifications when issues are detected:
+
+- **Mailtrap Integration**: Configure SMTP settings for email alerts
+- **Automatic Alerts**: Sends notifications when API health checks fail
+- **Environment Variables**: Set `MAILTRAP_*` variables to enable notifications
 
 ### Setup Instructions
 
@@ -238,9 +259,6 @@ For detailed setup instructions, see [AUTOMATION.md](./AUTOMATION.md).
 ### Testing Automation
 
 ```bash
-# Test all automation endpoints
-bun run test:automation
-
 # Test individual scripts
 bun run ingest    # Run ingestion manually
 bun run enrich    # Run enrichment manually
@@ -252,8 +270,6 @@ bun run enrich    # Run enrichment manually
 - **`build`**: Builds the application for production.
 - **`start`**: Starts the production server.
 - **`lint`**: Lints the codebase using ESLint.
-- **`test:security`**: Runs security tests to verify API protection.
-- **`test:automation`**: Tests automation API endpoints.
 - **`ingest`**: Runs the repository ingestion script manually.
 - **`enrich`**: Runs the repository content enrichment script with AI.
 

@@ -71,9 +71,6 @@ Test the automation endpoints manually:
 # Test from command line
 curl -X GET "https://yourdomain.com/api/automation/health" \
   -H "X-API-Key: your-api-key"
-
-# Or use the test script
-bun run test:automation
 ```
 
 ## Monitoring

@@ -154,7 +154,7 @@ export const middlewareConfigs = {
   // Scraping endpoints - very restrictive
   scraping: {
     rateLimiter: "scraping" as RateLimiterType,
-    allowedMethods: ["GET"],
+    allowedMethods: ["GET", "POST"], // Allow both GET and POST for automation
     requireApiKey: true, // Require API key for scraping
     skipOriginCheck: true, // Allow server-to-server calls
   },
