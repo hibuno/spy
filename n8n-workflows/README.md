@@ -11,6 +11,10 @@ This directory contains n8n workflow configurations for automating repository in
    - Name: "Spy API Key"
    - Add field: `apiKey` = `your-api-secret-key`
 
+   ![n8n Credentials Setup](../public/n8n-credentials.png)
+
+   **Important**: Make sure to use the exact field name `apiKey` as shown in the screenshot above. The workflows are configured to look for this specific credential field name.
+
 2. **Import Workflows:**
    - Copy the JSON from each workflow file
    - In n8n: Workflows > Import from JSON
@@ -48,6 +52,16 @@ Before importing, update these values in each workflow:
 1. **Domain URL**: Replace `https://yourdomain.com` with your actual domain
 2. **Credential**: Set to "Spy API Key" (or your credential name)
 3. **Notifications**: Configure notification nodes (email, Slack, etc.)
+
+### Credential Setup Details
+
+The workflows expect a Generic Credential with the following configuration:
+
+- **Credential Name**: "Spy API Key" (or update workflow references)
+- **Field Name**: `apiKey` (exactly as shown)
+- **Field Value**: Your `API_SECRET_KEY` from the .env file
+
+You can see the correct setup in the credentials screenshot above. The credential will be used in HTTP Request nodes with the header `X-API-Key`.
 
 ## Testing
 

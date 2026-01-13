@@ -16,22 +16,16 @@
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [240, 300]
+      "position": [
+        -656,
+        112
+      ]
     },
     {
       "parameters": {
         "url": "https://yourdomain.com/api/automation/health",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-API-Key",
-              "value": "={{$credentials.apiKey}}"
-            }
-          ]
-        },
         "options": {
           "timeout": 30000
         }
@@ -40,7 +34,10 @@
       "name": "Health Check",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [460, 300],
+      "position": [
+        -448,
+        112
+      ],
       "credentials": {
         "httpHeaderAuth": {
           "id": "spy-api-key",
@@ -63,29 +60,48 @@
       "name": "Is Healthy?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        -224,
+        112
+      ]
     },
     {
-      "parameters": {
-        "message": "🚨 SYSTEM HEALTH ALERT!\n\n⚠️ Status: {{$json.status}}\n❌ Error: {{$json.error}}\n\n🔧 Service Status:\n- Database: {{$json.services.database.status}}\n- GitHub: {{$json.services.github.status}}\n- OpenAI: {{$json.services.openai.status}}\n\n📋 Missing Environment Variables:\n{{$json.environment.missingEnvVars}}\n\n🕐 Timestamp: {{$json.timestamp}}\n\nPlease check the system immediately!"
-      },
-      "id": "4",
-      "name": "Health Alert",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [900, 400]
-    },
-    {
-      "parameters": {
-        "message": "✅ System health check passed\n\n📊 Status: {{$json.status}}\n🗄️ Database: {{$json.services.database.totalRepositories}} repositories\n🔑 GitHub Token: {{$json.services.github.hasToken ? 'Configured' : 'Missing'}}\n🤖 OpenAI: {{$json.services.openai.model}} via {{$json.services.openai.apiUrl}}\n\n🕐 {{$json.timestamp}}"
-      },
-      "id": "5",
+      "parameters": {},
+      "id": "6c69346b-2c49-451f-82a6-f14920626fd2",
       "name": "Health OK Log",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [900, 200]
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "",
+        "toEmail": "",
+        "subject": "Not Healthy",
+        "html": "Please check the logs on the Vercel dashboard to see what happened.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        208
+      ],
+      "id": "03a91464-9875-4a50-94b1-d6c80a9a571f",
+      "name": "Send email",
+      "webhookId": "b281f5a2-6720-4578-ad56-8b27081cfa2d",
+      "credentials": {
+        "smtp": {
+          "id": "tYu12QNrjAzwTvzo",
+          "name": "SMTP account"
+        }
+      }
     }
   ],
+  "pinData": {},
   "connections": {
     "Schedule Trigger": {
       "main": [
@@ -120,7 +136,7 @@
         ],
         [
           {
-            "node": "Health Alert",
+            "node": "Send email",
             "type": "main",
             "index": 0
           }
@@ -128,15 +144,15 @@
       ]
     }
   },
-  "createdAt": "2024-01-13T00:00:00.000Z",
-  "updatedAt": "2024-01-13T00:00:00.000Z",
+  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "staticData": null,
+  "versionId": "e3bcee1c-9fdf-4547-9ab8-c641a883b012",
   "meta": {
-    "templateCredsSetupCompleted": true
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2bd5173db514ad7781e5b6b4756883b7599b0ce5ff7c2e803bf00e8b6d546645"
   },
-  "pinData": {},
-  "versionId": "1"
+  "id": "xNhnhyzTRJlmB0ZU",
+  "tags": []
 }

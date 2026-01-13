@@ -23,15 +23,6 @@
         "url": "https://yourdomain.com/api/automation/ingest",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-API-Key",
-              "value": "={{$credentials.apiKey}}"
-            }
-          ]
-        },
         "options": {
           "timeout": 300000,
           "retry": {
