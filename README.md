@@ -283,4 +283,4 @@ The project is deployed on [Vercel](https://vercel.com/). The deployment is auto
 
 ## 10. License
 
-This project is proprietary and the source code is not available under an open-source license.
+This project is licensed under the MIT license.
