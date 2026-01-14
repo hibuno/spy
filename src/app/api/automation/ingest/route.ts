@@ -127,7 +127,7 @@ async function ingestHandler(_request: NextRequest) {
           paper_scraped_at: repo.source === "paper" ? new Date() : null,
           readme: null,
           publish: false,
-          ingested: false, // Mark as not ingested so process endpoint can handle it
+          ingested: true,
           enriched: false, // Mark as not enriched so enrich endpoint can handle it
         };
 
