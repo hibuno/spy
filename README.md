@@ -124,10 +124,11 @@ This application implements comprehensive security measures to protect API endpo
 
 ### API Key Protection
 
-Scraping endpoints (`/api/paper`, `/api/trending`, `/api/ossinsight`) can be protected with an API key:
+Automation endpoints (`/api/automation/*`) require API key authentication:
 
 - Set `API_SECRET_KEY` in environment variables
 - Include key in requests: `X-API-Key: your-secret-api-key-here`
+- Used by n8n workflows for secure automation
 
 ### Security Headers
 
@@ -255,23 +256,6 @@ The health monitoring system can send email notifications when issues are detect
 5. **Activate Workflows**: Enable each workflow in n8n
 
 For detailed setup instructions, see [AUTOMATION.md](./AUTOMATION.md).
-
-### Testing Automation
-
-```bash
-# Test individual scripts
-bun run ingest    # Run ingestion manually
-bun run enrich    # Run enrichment manually
-```
-
-## 7. Available Scripts
-
-- **`dev`**: Starts the Next.js development server with Turbopack.
-- **`build`**: Builds the application for production.
-- **`start`**: Starts the production server.
-- **`lint`**: Lints the codebase using ESLint.
-- **`ingest`**: Runs the repository ingestion script manually.
-- **`enrich`**: Runs the repository content enrichment script with AI.
 
 ## 8. Contributing
 

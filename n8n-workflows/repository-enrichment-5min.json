@@ -20,6 +20,7 @@
     },
     {
       "parameters": {
+        "method": "GET",
         "url": "https://yourdomain.com/api/automation/status",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth"
@@ -55,6 +56,7 @@
     },
     {
       "parameters": {
+        "method": "POST",
         "url": "https://yourdomain.com/api/automation/enrich",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -83,7 +85,7 @@
         "message": "ℹ️ No repositories need enrichment at this time.\n\n📊 Current Status:\n- Total Repos: {{$('Check Status').item.json.statistics.total}}\n- Enriched: {{$('Check Status').item.json.statistics.enriched}}\n- Need Enrichment: {{$('Check Status').item.json.nextActions.enrichmentsNeeded}}"
       },
       "id": "5",
-      "name": "Skip Log",
+      "name": "Skip Notification",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [900, 400]
@@ -107,20 +109,45 @@
     },
     {
       "parameters": {
-        "message": "✅ Repository enrichment completed!\n\n📊 Results:\n- Total Found: {{$json.totalFound}}\n- Processed: {{$json.processed}}\n- Errors: {{$json.errors}}\n- Timestamp: {{$json.timestamp}}"
+        "method": "POST",
+        "url": "https://yourdomain.com/api/revalidate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\"path\": \"/\"}",
+        "options": {
+          "timeout": 30000
+        }
       },
-      "id": "7",
-      "name": "Enrichment Success",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [1340, 100]
+      "id": "9",
+      "name": "Revalidate Cache",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1340, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "revalidation-secret",
+          "name": "Revalidation Secret"
+        }
+      }
     },
     {
       "parameters": {
-        "message": "❌ Repository enrichment failed!\n\n🚨 Error: {{$json.error}}\n- Timestamp: {{$json.timestamp}}"
+        "message": "✅ Repository enrichment completed!\n\n📊 Results:\n- Total Found: {{$('Trigger Enrichment').item.json.totalFound}}\n- Processed: {{$('Trigger Enrichment').item.json.processed}}\n- Errors: {{$('Trigger Enrichment').item.json.errors}}\n- Timestamp: {{$('Trigger Enrichment').item.json.timestamp}}\n\n🔄 Cache revalidated successfully!"
+      },
+      "id": "7",
+      "name": "Success Notification",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1560, 100]
+    },
+    {
+      "parameters": {
+        "message": "❌ Repository enrichment failed!\n\n🚨 Error: {{$('Trigger Enrichment').item.json.error}}\n- Timestamp: {{$('Trigger Enrichment').item.json.timestamp}}"
       },
       "id": "8",
-      "name": "Enrichment Error",
+      "name": "Error Notification",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [1340, 300]
@@ -160,7 +187,7 @@
         ],
         [
           {
-            "node": "Skip Log",
+            "node": "Skip Notification",
             "type": "main",
             "index": 0
           }
@@ -182,14 +209,25 @@
       "main": [
         [
           {
-            "node": "Enrichment Success",
+            "node": "Revalidate Cache",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Enrichment Error",
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revalidate Cache": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
             "type": "main",
             "index": 0
           }
@@ -198,7 +236,7 @@
     }
   },
   "createdAt": "2024-01-13T00:00:00.000Z",
-  "updatedAt": "2024-01-13T00:00:00.000Z",
+  "updatedAt": "2024-01-14T00:00:00.000Z",
   "settings": {
     "executionOrder": "v1"
   },
@@ -207,5 +245,7 @@
     "templateCredsSetupCompleted": true
   },
   "pinData": {},
-  "versionId": "1"
+  "versionId": "2",
+  "active": false,
+  "tags": []
 }

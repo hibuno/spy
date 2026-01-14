@@ -10,11 +10,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
-		"db:studio": "drizzle-kit studio",
-		"enrich": "bun run scripts/enrich_repository.ts",
-		"ingest": "bun run scripts/ingest_repository.ts",
-		"revalidate": "bun run scripts/revalidate.ts",
-		"revalidate:home": "bun run scripts/revalidate.ts"
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
 		"@databuddy/sdk": "^2.3.24",

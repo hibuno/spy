@@ -20,8 +20,8 @@ const STATIC_CACHE_URLS = [
 
 // API endpoints to cache with network-first strategy
 const API_CACHE_URLS = [
-	'/api/trending',
-	'/api/paper',
+	'/api/repositories',
+	'/api/stats',
 	'/api/images'
 ];
 

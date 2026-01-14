@@ -20,6 +20,7 @@
     },
     {
       "parameters": {
+        "method": "POST",
         "url": "https://yourdomain.com/api/automation/ingest",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -62,20 +63,45 @@
     },
     {
       "parameters": {
-        "message": "✅ Repository ingestion completed successfully!\n\n📊 Results:\n- Total Found: {{$json.totalFound}}\n- Processed: {{$json.processed}}\n- Errors: {{$json.errors}}\n- Timestamp: {{$json.timestamp}}\n\n{{$json.message}}"
+        "method": "POST",
+        "url": "https://yourdomain.com/api/revalidate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\"path\": \"/\"}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "6",
+      "name": "Revalidate Cache",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "revalidation-secret",
+          "name": "Revalidation Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "message": "✅ Repository ingestion completed successfully!\n\n📊 Results:\n- Total Found: {{$('Trigger Ingestion').item.json.totalFound}}\n- Processed: {{$('Trigger Ingestion').item.json.processed}}\n- Errors: {{$('Trigger Ingestion').item.json.errors}}\n- Timestamp: {{$('Trigger Ingestion').item.json.timestamp}}\n\n{{$('Trigger Ingestion').item.json.message}}\n\n🔄 Cache revalidated successfully!"
       },
       "id": "4",
-      "name": "Success Log",
+      "name": "Success Notification",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [900, 200]
+      "position": [1120, 200]
     },
     {
       "parameters": {
         "message": "❌ Repository ingestion failed!\n\n🚨 Error Details:\n- Error: {{$json.error}}\n- Timestamp: {{$json.timestamp}}\n\nPlease check the application logs for more details."
       },
       "id": "5",
-      "name": "Error Alert",
+      "name": "Error Notification",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [900, 400]
@@ -108,14 +134,25 @@
       "main": [
         [
           {
-            "node": "Success Log",
+            "node": "Revalidate Cache",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Error Alert",
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revalidate Cache": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
             "type": "main",
             "index": 0
           }
@@ -124,7 +161,7 @@
     }
   },
   "createdAt": "2024-01-13T00:00:00.000Z",
-  "updatedAt": "2024-01-13T00:00:00.000Z",
+  "updatedAt": "2024-01-14T00:00:00.000Z",
   "settings": {
     "executionOrder": "v1"
   },
@@ -133,5 +170,7 @@
     "templateCredsSetupCompleted": true
   },
   "pinData": {},
-  "versionId": "1"
+  "versionId": "2",
+  "active": false,
+  "tags": []
 }

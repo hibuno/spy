@@ -1,22 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ContentEnricher } from "../../../../../scripts/enrich_repository";
 import { withApiMiddleware, middlewareConfigs } from "@/lib/api-middleware";
+import { db } from "@/db";
+import { repositoriesTable } from "@/db/schema";
+import { sql, eq } from "drizzle-orm";
+import {
+  fetchGitHubRepository,
+  fetchGitHubReadme,
+  fetchGitHubLanguages,
+  parseRepositoryPath,
+  extractImagesFromReadme,
+  determineExperienceLevel,
+  determineUsabilityLevel,
+  determineDeploymentLevel,
+} from "@/services/github-service";
 
 async function enrichHandler(_request: NextRequest) {
   try {
     console.log("🚀 Starting automated repository enrichment...");
 
-    const enricher = new ContentEnricher();
-
-    // Connect to database
-    await enricher.connect();
-
-    // Get repositories that need enrichment
-    const repositoriesToEnrich =
-      await enricher.getRepositoriesNeedingEnrichment();
+    // Get repositories that need enrichment (ingested but not enriched)
+    const repositoriesToEnrich = await db
+      .select()
+      .from(repositoriesTable)
+      .where(
+        sql`${repositoriesTable.ingested} = true AND ${repositoriesTable.enriched} = false`
+      )
+      .limit(10); // Process max 10 at a time
 
     if (repositoriesToEnrich.length === 0) {
-      await enricher.disconnect();
       return NextResponse.json({
         success: true,
         message: "No repositories need enrichment",
@@ -43,12 +54,104 @@ async function enrichHandler(_request: NextRequest) {
             repository.repository
           }`
         );
-        await enricher.processRepository(repository);
-        processedCount++;
 
-        // Add delay between repositories (OpenAI rate limit)
+        // Parse repository path
+        const parsed = parseRepositoryPath(repository.repository || "");
+
+        if (!parsed) {
+          console.warn(
+            `Could not parse repository path: ${repository.repository}`
+          );
+          // Mark as enriched anyway to avoid reprocessing
+          await db
+            .update(repositoriesTable)
+            .set({
+              enriched: true,
+              updated_at: new Date(),
+            })
+            .where(eq(repositoriesTable.id, repository.id));
+          processedCount++;
+          continue;
+        }
+
+        const { owner, repo } = parsed;
+
+        // Fetch GitHub data
+        const [githubRepo, readme, languages] = await Promise.all([
+          fetchGitHubRepository(owner, repo),
+          fetchGitHubReadme(owner, repo),
+          fetchGitHubLanguages(owner, repo),
+        ]);
+
+        if (!githubRepo) {
+          console.warn(`GitHub repository not found: ${owner}/${repo}`);
+          // Mark as enriched to avoid reprocessing
+          await db
+            .update(repositoriesTable)
+            .set({
+              enriched: true,
+              updated_at: new Date(),
+            })
+            .where(eq(repositoriesTable.id, repository.id));
+          processedCount++;
+          continue;
+        }
+
+        // Extract images from README
+        const images = readme ? extractImagesFromReadme(readme) : [];
+
+        // Determine levels
+        const experienceLevel = determineExperienceLevel(
+          languages || [],
+          githubRepo.topics || [],
+          githubRepo.description
+        );
+
+        const usabilityLevel = determineUsabilityLevel(
+          !!readme,
+          !!githubRepo.homepage,
+          githubRepo.topics || []
+        );
+
+        const deploymentLevel = determineDeploymentLevel(
+          languages || [],
+          githubRepo.topics || []
+        );
+
+        // Update repository with enriched data
+        await db
+          .update(repositoriesTable)
+          .set({
+            summary: githubRepo.description || repository.summary,
+            content: readme ? readme.substring(0, 5000) : null, // Limit content size
+            languages: languages ? languages.join(", ") : null,
+            experience: experienceLevel,
+            usability: usabilityLevel,
+            deployment: deploymentLevel,
+            stars: githubRepo.stargazers_count,
+            forks: githubRepo.forks_count,
+            watching: githubRepo.watchers_count,
+            license: githubRepo.license?.name || null,
+            homepage: githubRepo.homepage || githubRepo.html_url,
+            images: images.length > 0 ? images : [],
+            archived: githubRepo.archived,
+            disabled: githubRepo.disabled,
+            open_issues: githubRepo.open_issues_count,
+            default_branch: githubRepo.default_branch,
+            network_count: githubRepo.network_count,
+            tags: githubRepo.topics?.join(", ") || null,
+            readme: readme,
+            enriched: true,
+            updated_at: new Date(),
+          })
+          .where(eq(repositoriesTable.id, repository.id));
+
+        processedCount++;
+        console.log(`✅ Enriched: ${owner}/${repo}`);
+
+        // Add delay between repositories (GitHub API rate limit: 5000/hour with token, 60/hour without)
         if (i < repositoriesToEnrich.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+          await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 second delay
         }
       } catch (error) {
         errorCount++;
@@ -62,8 +165,6 @@ async function enrichHandler(_request: NextRequest) {
         continue;
       }
     }
-
-    await enricher.disconnect();
 
     const result = {
       success: true,

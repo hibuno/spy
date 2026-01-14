@@ -16,13 +16,11 @@
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [
-        -656,
-        112
-      ]
+      "position": [240, 300]
     },
     {
       "parameters": {
+        "method": "GET",
         "url": "https://yourdomain.com/api/automation/health",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -34,10 +32,7 @@
       "name": "Health Check",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        -448,
-        112
-      ],
+      "position": [460, 300],
       "credentials": {
         "httpHeaderAuth": {
           "id": "spy-api-key",
@@ -60,48 +55,29 @@
       "name": "Is Healthy?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [
-        -224,
-        112
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "6c69346b-2c49-451f-82a6-f14920626fd2",
-      "name": "Health OK Log",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        0,
-        0
-      ]
+      "position": [680, 300]
     },
     {
       "parameters": {
-        "fromEmail": "",
-        "toEmail": "",
-        "subject": "Not Healthy",
-        "html": "Please check the logs on the Vercel dashboard to see what happened.",
-        "options": {}
+        "message": "✅ System health check passed!\n\n📊 Status: {{$('Health Check').item.json.status}}\n- Database: {{$('Health Check').item.json.database}}\n- Timestamp: {{$('Health Check').item.json.timestamp}}"
       },
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [
-        0,
-        208
-      ],
-      "id": "03a91464-9875-4a50-94b1-d6c80a9a571f",
-      "name": "Send email",
-      "webhookId": "b281f5a2-6720-4578-ad56-8b27081cfa2d",
-      "credentials": {
-        "smtp": {
-          "id": "tYu12QNrjAzwTvzo",
-          "name": "SMTP account"
-        }
-      }
+      "id": "4",
+      "name": "Health OK",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "message": "🚨 System health check failed!\n\n❌ Status: {{$('Health Check').item.json.status}}\n- Error: {{$('Health Check').item.json.error}}\n- Missing env vars: {{$('Health Check').item.json.environment.missingEnvVars}}\n- Timestamp: {{$('Health Check').item.json.timestamp}}\n\nPlease check the application logs and environment configuration."
+      },
+      "id": "5",
+      "name": "Alert Notification",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [900, 400]
     }
   ],
-  "pinData": {},
   "connections": {
     "Schedule Trigger": {
       "main": [
@@ -129,14 +105,14 @@
       "main": [
         [
           {
-            "node": "Health OK Log",
+            "node": "Health OK",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Send email",
+            "node": "Alert Notification",
             "type": "main",
             "index": 0
           }
@@ -144,15 +120,17 @@
       ]
     }
   },
-  "active": false,
+  "createdAt": "2024-01-13T00:00:00.000Z",
+  "updatedAt": "2024-01-14T00:00:00.000Z",
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "e3bcee1c-9fdf-4547-9ab8-c641a883b012",
+  "staticData": null,
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "2bd5173db514ad7781e5b6b4756883b7599b0ce5ff7c2e803bf00e8b6d546645"
+    "templateCredsSetupCompleted": true
   },
-  "id": "xNhnhyzTRJlmB0ZU",
+  "pinData": {},
+  "versionId": "2",
+  "active": false,
   "tags": []
 }
