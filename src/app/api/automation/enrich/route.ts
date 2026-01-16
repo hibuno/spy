@@ -17,7 +17,80 @@ const OPENAI_API_URL =
 const OPENAI_API_MODEL = process.env.OPENAI_API_MODEL || "gpt-5.2-nano";
 
 /**
- * Generate AI-enhanced content and determine levels for repository
+ * Clean README content by removing HTML/markdown formatting
+ */
+function cleanReadmeContent(content: string): string {
+  try {
+    let cleaned = content;
+
+    // Remove HTML tags
+    cleaned = cleaned.replace(/<[^>]*>/g, "");
+
+    // Remove markdown image syntax ![alt](url)
+    cleaned = cleaned.replace(/!\[.*?\]\(.*?\)/g, "");
+
+    // Convert markdown links [text](url) to just text
+    cleaned = cleaned.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+    // Remove markdown headers formatting but keep the text
+    cleaned = cleaned.replace(/^#+\s*/gm, "");
+
+    // Remove emphasis markers
+    cleaned = cleaned.replace(/(\*\*|__)(.*?)\1/g, "$2"); // Bold
+    cleaned = cleaned.replace(/(\*|_)(.*?)\1/g, "$2"); // Italic
+
+    // Remove code block markers
+    cleaned = cleaned.replace(/```[\s\S]*?```/g, "[Code block removed]");
+    cleaned = cleaned.replace(/`([^`]+)`/g, "$1"); // Inline code
+
+    // Remove markdown list markers
+    cleaned = cleaned.replace(/^[\s]*[-\*\+]\s+/gm, "");
+    cleaned = cleaned.replace(/^[\s]*\d+\.\s+/gm, "");
+
+    // Remove excessive whitespace and empty lines
+    cleaned = cleaned.replace(/\n\s*\n\s*\n/g, "\n\n"); // Multiple empty lines
+    cleaned = cleaned.replace(/^\s+|\s+$/g, ""); // Leading/trailing whitespace
+    cleaned = cleaned.replace(/[ \t]+/g, " "); // Multiple spaces
+
+    // Remove common markdown artifacts
+    cleaned = cleaned.replace(/^\s*[-*_]{3,}\s*$/gm, ""); // Horizontal rules
+    cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, ""); // HTML comments
+
+    // Limit content to 100K characters to prevent token limit issues
+    const maxLength = 100000;
+    if (cleaned.length > maxLength) {
+      console.log(
+        `📏 Content too long (${cleaned.length} chars), truncating to ${maxLength} chars`
+      );
+      // Try to truncate at a sentence boundary
+      let truncated = cleaned.substring(0, maxLength);
+      const lastSentenceEnd = Math.max(
+        truncated.lastIndexOf(". "),
+        truncated.lastIndexOf("! "),
+        truncated.lastIndexOf("? ")
+      );
+
+      if (lastSentenceEnd > maxLength * 0.8) {
+        // If we can keep 80% of the limit
+        truncated = truncated.substring(0, lastSentenceEnd + 1);
+      }
+
+      cleaned = truncated + "\n\n[Content truncated for length]";
+    }
+
+    console.log(
+      `🧹 Cleaned README content: ${content.length} → ${cleaned.length} characters`
+    );
+    return cleaned;
+  } catch (error) {
+    console.error("❌ Error cleaning README content:", error);
+    // Return original content if cleaning fails
+    return content.substring(0, 100000);
+  }
+}
+
+/**
+ * Generate AI-enhanced content using natural article-style approach
  */
 async function generateAIContent(repository: any): Promise<{
   enhancedSummary: string;
@@ -38,25 +111,46 @@ async function generateAIContent(repository: any): Promise<{
   }
 
   try {
-    const prompt = `Analyze this GitHub repository and provide structured information.
-
-Repository: ${repository.repository}
-Description: ${repository.summary || "No description"}
-Languages: ${repository.languages || "Unknown"}
-Stars: ${repository.stars || 0}
-Topics: ${repository.tags || "None"}
-Has README: ${repository.readme ? "Yes" : "No"}
-Has Homepage: ${repository.homepage ? "Yes" : "No"}
-README excerpt: ${
-      repository.readme ? repository.readme.substring(0, 1000) : "No README"
+    if (!repository.readme) {
+      console.log(`⚠️  No README content for ${repository.repository}`);
+      return {
+        enhancedSummary: "",
+        enhancedContent: "",
+        experienceLevel: "",
+        usabilityLevel: "",
+        deploymentLevel: "",
+      };
     }
 
-Provide:
-1. Summary (2-3 sentences): Concise description of what this repository does and why it's useful
-2. Content (3-4 paragraphs): Detailed description covering problem solved, key features, target users, and technical highlights
+    // Clean the README content to remove HTML/markdown formatting and limit length
+    const cleanedReadme = cleanReadmeContent(repository.readme);
+
+    if (!cleanedReadme || cleanedReadme.trim().length < 100) {
+      console.log(
+        `⚠️  README content too short or empty after cleaning for ${repository.repository}`
+      );
+      return {
+        enhancedSummary: "",
+        enhancedContent: "",
+        experienceLevel: "",
+        usabilityLevel: "",
+        deploymentLevel: "",
+      };
+    }
+
+    const prompt = `Based on the following GitHub repository README content in English, create a human-written article about this project. The article should be engaging, informative, and written in a natural, conversational style.
+
+README Content:
+${cleanedReadme}
+
+Please generate:
+1. A brief summary/excerpt (2-3 sentences)
+2. The full article content in markdown format
 3. Experience Level: beginner, intermediate, or advanced
 4. Usability Level: easy, intermediate, or difficult
-5. Deployment Difficulty: easy, intermediate, advanced, or expert`;
+5. Deployment Difficulty: easy, intermediate, advanced, or expert
+
+Format your response exactly in proper JSON format based on provided response format. Make the article comprehensive but not too long. Focus on what makes this project interesting, its features, use cases, and value proposition.`;
 
     const response = await fetch(OPENAI_API_URL, {
       method: "POST",
@@ -67,11 +161,6 @@ Provide:
       body: JSON.stringify({
         model: OPENAI_API_MODEL,
         messages: [
-          {
-            role: "system",
-            content:
-              "You are a helpful technical writer and software architect.",
-          },
           {
             role: "user",
             content: prompt,
@@ -124,7 +213,7 @@ Provide:
           },
         },
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: 4000,
       }),
     });
 
@@ -154,6 +243,7 @@ Provide:
       };
     }
 
+    console.log(`🤖 Generated content for ${repository.repository}`);
     // Parse structured JSON response
     try {
       const parsed = JSON.parse(content);
@@ -295,7 +385,7 @@ async function enrichHandler(_request: NextRequest) {
         } = await generateAIContent(enrichedRepo);
 
         // Determine if repository should be published
-        // Publish if: has images OR has AI-generated content OR has good metadata
+        // Publish if: has images OR has AI-generated content
         const hasImages = images.length > 0;
         const hasAIContent = !!(enhancedSummary && enhancedContent);
         const hasGoodMetadata =
@@ -382,7 +472,7 @@ async function enrichHandler(_request: NextRequest) {
       errors: errorCount,
       errorDetails: errors.slice(0, 10), // Limit error details to first 10
       note: OPENAI_API_KEY
-        ? "AI-enhanced content and levels generated. Repositories with images or good AI content auto-published."
+        ? "AI-enhanced article-style content generated. Repositories with images or AI content auto-published."
         : "AI content generation skipped (no API key). Set OPENAI_API_KEY to enable.",
       timestamp: new Date().toISOString(),
     };
