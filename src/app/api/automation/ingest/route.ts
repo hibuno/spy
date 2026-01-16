@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withApiMiddleware, middlewareConfigs } from "@/lib/api-middleware";
+import { fetchOSSInsightRepositories } from "@/services/ossinsight-service";
+import { fetchPaperRepositories } from "@/services/paper-service";
+import { fetchTrendingRepositories } from "@/services/trending-service";
 import { db } from "@/db";
 import { repositoriesTable } from "@/db/schema";
-import { sql, eq } from "drizzle-orm";
 import {
   fetchGitHubRepository,
   fetchGitHubReadme,
@@ -379,80 +381,194 @@ async function ingestHandler(_request: NextRequest) {
   try {
     console.log("🚀 Starting automated repository ingestion...");
 
-    // Get repositories that need ingestion (not yet ingested)
-    const repositoriesToIngest = await db
-      .select()
-      .from(repositoriesTable)
-      .where(sql`${repositoriesTable.ingested} = false`)
-      .limit(10); // Process max 10 at a time
-
-    if (repositoriesToIngest.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: "No repositories need ingestion",
-        processed: 0,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    console.log(
-      `📋 Found ${repositoriesToIngest.length} repositories to ingest`
-    );
-
+    let totalNewRepos = 0;
+    let addedCount = 0;
     let processedCount = 0;
     let errorCount = 0;
     const errors: string[] = [];
+    const sources = [
+      { name: "ossinsight", fetcher: fetchOSSInsightRepositories },
+      { name: "paper", fetcher: fetchPaperRepositories },
+      { name: "trending", fetcher: fetchTrendingRepositories },
+    ];
+    const MAX_REPOS_PER_HOUR = 20;
 
-    // Process repositories with rate limiting
-    for (let i = 0; i < repositoriesToIngest.length; i++) {
-      const repository = repositoriesToIngest[i];
+    // Collect all new repositories from all sources first
+    const allNewRepos: any[] = [];
+
+    // Fetch new repositories from all scraping services directly
+    for (const { name: source, fetcher } of sources) {
+      try {
+        console.log(`� Fetching repositories from ${source}...`);
+
+        // Call service directly instead of making HTTP request
+        const repositories = await fetcher();
+
+        // Handle different response formats from different services
+        let newRepos = [];
+        if (source === "paper") {
+          // Paper service returns papers with different structure
+          newRepos = repositories
+            .filter((paper: any) => !paper.existsInDB)
+            .map((paper: any) => ({
+              href: paper.url, // Paper uses 'url' as the repository identifier
+              url: paper.url,
+              name: paper.url,
+              title: paper.title,
+              authors: paper.authors,
+              thumbnail: paper.thumbnail,
+              source: source,
+            }));
+        } else {
+          // OSS Insight and Trending services return repositories array
+          newRepos = repositories
+            .filter((repo: any) => !repo.existsInDB)
+            .map((repo: any) => ({
+              ...repo,
+              source: source,
+            }));
+        }
+
+        console.log(
+          `📋 Found ${newRepos.length} new repositories from ${source}`
+        );
+        totalNewRepos += newRepos.length;
+        allNewRepos.push(...newRepos);
+
+        // Add delay between different sources
+        if (source !== sources[sources.length - 1].name) {
+          console.log(`⏳ Waiting before fetching from next source...`);
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`❌ Error fetching from ${source}:`, error);
+        errors.push(
+          `${source}: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+        continue;
+      }
+    }
+
+    // Limit to MAX_REPOS_PER_HOUR and prioritize by source
+    const limitedRepos = allNewRepos.slice(0, MAX_REPOS_PER_HOUR);
+    console.log(
+      `🎯 Processing ${limitedRepos.length} repositories (limited from ${totalNewRepos} total)`
+    );
+
+    // Add repositories to database and process them with full GitHub data
+    for (let i = 0; i < limitedRepos.length; i++) {
+      const repo = limitedRepos[i];
 
       try {
         console.log(
-          `📝 Ingesting ${i + 1}/${repositoriesToIngest.length}: ${
-            repository.repository
-          }`
+          `➕ Adding & Processing ${i + 1}/${limitedRepos.length}: ${
+            repo.name || repo.href
+          } (from ${repo.source})`
         );
 
+        const repositoryPath = repo.href || repo.name;
+
         // Parse repository path
-        const parsed = parseRepositoryPath(repository.repository || "");
+        const parsed = parseRepositoryPath(repositoryPath);
 
         if (!parsed) {
-          console.warn(
-            `Could not parse repository path: ${repository.repository}`
-          );
-          // Mark as ingested anyway to avoid reprocessing
+          console.warn(`Could not parse repository path: ${repositoryPath}`);
+          // Create minimal record without GitHub data
+          const repoRecord = {
+            id: crypto.randomUUID(),
+            repository: repositoryPath,
+            summary: repo.description || repo.title || null,
+            content: null,
+            languages: null,
+            experience: null,
+            usability: null,
+            deployment: null,
+            stars: repo.stars ? parseInt(repo.stars) : null,
+            forks: repo.forks ? parseInt(repo.forks) : null,
+            watching: null,
+            license: null,
+            homepage: repo.url || null,
+            images: [],
+            created_at: new Date(),
+            updated_at: new Date(),
+            archived: false,
+            disabled: false,
+            open_issues: null,
+            default_branch: "main",
+            network_count: null,
+            tags: null,
+            arxiv_url: null,
+            huggingface_url: repo.source === "paper" ? repo.url : null,
+            paper_authors: repo.authors ? JSON.stringify(repo.authors) : null,
+            paper_abstract: null,
+            paper_scraped_at: repo.source === "paper" ? new Date() : null,
+            readme: null,
+            publish: false,
+            ingested: true,
+            enriched: false,
+          };
+
           await db
-            .update(repositoriesTable)
-            .set({
-              ingested: true,
-              updated_at: new Date(),
-            })
-            .where(eq(repositoriesTable.id, repository.id));
-          processedCount++;
+            .insert(repositoriesTable)
+            .values(repoRecord)
+            .onConflictDoNothing();
+          addedCount++;
           continue;
         }
 
-        const { owner, repo } = parsed;
+        const { owner, repo: repoName } = parsed;
 
         // Fetch GitHub data
         const [githubRepo, readme, languages] = await Promise.all([
-          fetchGitHubRepository(owner, repo),
-          fetchGitHubReadme(owner, repo),
-          fetchGitHubLanguages(owner, repo),
+          fetchGitHubRepository(owner, repoName),
+          fetchGitHubReadme(owner, repoName),
+          fetchGitHubLanguages(owner, repoName),
         ]);
 
         if (!githubRepo) {
-          console.warn(`GitHub repository not found: ${owner}/${repo}`);
-          // Mark as ingested to avoid reprocessing
+          console.warn(`GitHub repository not found: ${owner}/${repoName}`);
+          // Create minimal record without GitHub data
+          const repoRecord = {
+            id: crypto.randomUUID(),
+            repository: repositoryPath,
+            summary: repo.description || repo.title || null,
+            content: null,
+            languages: null,
+            experience: null,
+            usability: null,
+            deployment: null,
+            stars: repo.stars ? parseInt(repo.stars) : null,
+            forks: repo.forks ? parseInt(repo.forks) : null,
+            watching: null,
+            license: null,
+            homepage: repo.url || null,
+            images: [],
+            created_at: new Date(),
+            updated_at: new Date(),
+            archived: false,
+            disabled: false,
+            open_issues: null,
+            default_branch: "main",
+            network_count: null,
+            tags: null,
+            arxiv_url: null,
+            huggingface_url: repo.source === "paper" ? repo.url : null,
+            paper_authors: repo.authors ? JSON.stringify(repo.authors) : null,
+            paper_abstract: null,
+            paper_scraped_at: repo.source === "paper" ? new Date() : null,
+            readme: null,
+            publish: false,
+            ingested: true,
+            enriched: false,
+          };
+
           await db
-            .update(repositoriesTable)
-            .set({
-              ingested: true,
-              updated_at: new Date(),
-            })
-            .where(eq(repositoriesTable.id, repository.id));
-          processedCount++;
+            .insert(repositoriesTable)
+            .values(repoRecord)
+            .onConflictDoNothing();
+          addedCount++;
           continue;
         }
 
@@ -460,12 +576,12 @@ async function ingestHandler(_request: NextRequest) {
         let readmeImages: ImageItem[] = [];
         if (readme) {
           try {
-            const repoUrl = `https://github.com/${repository.repository}`;
+            const repoUrl = `https://github.com/${repositoryPath}`;
             readmeImages = await extractImagesFromReadme(readme, repoUrl);
             console.log(`🖼️  Found ${readmeImages.length} images in README`);
           } catch (imageError) {
             console.log(
-              `⚠️  Image extraction failed for ${repository.repository}, continuing without images`,
+              `⚠️  Image extraction failed for ${repositoryPath}, continuing without images`,
               imageError
             );
           }
@@ -485,7 +601,7 @@ async function ingestHandler(_request: NextRequest) {
           try {
             const screenshot = await takeScreenshot(homepageUrl);
             if (screenshot) {
-              const fileName = `images/${repository.repository?.replace(
+              const fileName = `images/${repositoryPath.replace(
                 "/",
                 "-"
               )}-${Date.now()}.png`;
@@ -521,78 +637,90 @@ async function ingestHandler(_request: NextRequest) {
           (img) => !img.url.includes("star-history.com")
         );
 
-        // Update repository with fetched data
-        await db
-          .update(repositoriesTable)
-          .set({
-            summary: githubRepo.description || repository.summary,
-            languages: languages ? languages.join(", ") : null,
-            stars: githubRepo.stargazers_count,
-            forks: githubRepo.forks_count,
-            watching: githubRepo.watchers_count,
-            license: githubRepo.license?.name || null,
-            homepage: homepageUrl,
-            images: filteredImages,
-            archived: githubRepo.archived,
-            disabled: githubRepo.disabled,
-            open_issues: githubRepo.open_issues_count,
-            default_branch: githubRepo.default_branch,
-            network_count: githubRepo.network_count,
-            tags: githubRepo.topics?.join(", ") || null,
-            readme: readme,
-            ingested: true,
-            updated_at: new Date(),
-          })
-          .where(eq(repositoriesTable.id, repository.id));
+        // Create full repository record with GitHub data
+        const repoRecord = {
+          id: crypto.randomUUID(),
+          repository: repositoryPath,
+          summary:
+            githubRepo.description || repo.description || repo.title || null,
+          content: null,
+          languages: languages ? languages.join(", ") : null,
+          experience: null,
+          usability: null,
+          deployment: null,
+          stars: githubRepo.stargazers_count,
+          forks: githubRepo.forks_count,
+          watching: githubRepo.watchers_count,
+          license: githubRepo.license?.name || null,
+          homepage: homepageUrl,
+          images: filteredImages,
+          created_at: new Date(),
+          updated_at: new Date(),
+          archived: githubRepo.archived,
+          disabled: githubRepo.disabled,
+          open_issues: githubRepo.open_issues_count,
+          default_branch: githubRepo.default_branch,
+          network_count: githubRepo.network_count,
+          tags: githubRepo.topics?.join(", ") || null,
+          arxiv_url: null,
+          huggingface_url: repo.source === "paper" ? repo.url : null,
+          paper_authors: repo.authors ? JSON.stringify(repo.authors) : null,
+          paper_abstract: null,
+          paper_scraped_at: repo.source === "paper" ? new Date() : null,
+          readme: readme,
+          publish: false,
+          ingested: true,
+          enriched: false,
+        };
 
-        processedCount++;
-        console.log(`✅ Ingested: ${repository.repository}`);
-        console.log(`   🌟 Stars: ${githubRepo.stargazers_count}`);
-        console.log(`   🍴 Forks: ${githubRepo.forks_count}`);
-        console.log(`   📄 License: ${githubRepo.license?.name || "None"}`);
-        console.log(`   🏠 Homepage: ${homepageUrl || "None"}`);
-        console.log(`   🖼️  Images: ${filteredImages.length}`);
+        // Insert into database
+        try {
+          await db
+            .insert(repositoriesTable)
+            .values(repoRecord)
+            .onConflictDoNothing();
+          addedCount++;
+          processedCount++;
 
-        // Add delay between repositories (GitHub API rate limiting)
-        if (i < repositoriesToIngest.length - 1) {
+          console.log(`✅ Added & Processed: ${repositoryPath}`);
+          console.log(`   🌟 Stars: ${githubRepo.stargazers_count}`);
+          console.log(`   🍴 Forks: ${githubRepo.forks_count}`);
+          console.log(`   📄 License: ${githubRepo.license?.name || "None"}`);
+          console.log(`   🏠 Homepage: ${homepageUrl || "None"}`);
+          console.log(`   🖼️  Images: ${filteredImages.length}`);
+        } catch (insertError) {
+          console.warn(`Insert skipped for ${repositoryPath}:`, insertError);
+        }
+
+        // Add delay between repositories (GitHub API + Browserless rate limiting)
+        if (i < limitedRepos.length - 1) {
           await new Promise((resolve) => setTimeout(resolve, 3000)); // 3 second delay
         }
       } catch (error) {
         errorCount++;
-        const errorMessage = `${repository.repository}: ${
+        const errorMessage = `${repo.name || repo.href}: ${
           error instanceof Error ? error.message : "Unknown error"
         }`;
         errors.push(errorMessage);
-        console.error(`❌ Error ingesting ${repository.repository}:`, error);
-
-        // Mark as ingested even on error to avoid infinite retries
-        try {
-          await db
-            .update(repositoriesTable)
-            .set({
-              ingested: true,
-              updated_at: new Date(),
-            })
-            .where(eq(repositoriesTable.id, repository.id));
-        } catch (updateError) {
-          console.error("Error marking repository as ingested:", updateError);
-        }
-
-        // Continue with next repository
+        console.error(`❌ Error processing ${repo.name || repo.href}:`, error);
         continue;
       }
     }
 
     const result = {
       success: true,
-      message: `Repository ingestion completed`,
-      totalFound: repositoriesToIngest.length,
+      message: `Repository ingestion completed - added ${addedCount} new repositories`,
+      totalFound: totalNewRepos,
+      added: addedCount,
       processed: processedCount,
+      limited: totalNewRepos > MAX_REPOS_PER_HOUR,
+      maxPerHour: MAX_REPOS_PER_HOUR,
       errors: errorCount,
-      errorDetails: errors.slice(0, 10), // Limit error details to first 10
+      errorDetails: errors.slice(0, 10),
+      sources: sources.map((s) => s.name),
       note: BROWSERLESS_API_KEY
-        ? "Repositories fetched from GitHub with README, images, and screenshots (via Browserless). Ready for enrichment."
-        : "Repositories fetched from GitHub with README and images. Screenshots skipped (no Browserless API key). Ready for enrichment.",
+        ? "Repositories fetched from external sources, processed with GitHub data, README, images, and screenshots (via Browserless). Ready for enrichment."
+        : "Repositories fetched from external sources and processed with GitHub data, README, and images. Screenshots skipped (no Browserless API key). Ready for enrichment.",
       timestamp: new Date().toISOString(),
     };
 
